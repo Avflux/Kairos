@@ -1,0 +1,39 @@
+@inherits LayoutComponentBase
+@using kairos.Components.Layout.Menu
+
+<!-- Layout principal com header inline para debug -->
+<div class="page">
+    <!-- Sidebar/Menu que vai até o topo (250px de largura) -->
+    <div class="sidebar">
+        <Menu />
+    </div>
+
+    <!-- Área principal (ocupa o restante do espaço) -->
+    <div class="main-layout">
+        <!-- HEADER INLINE PARA DEBUG - 3 PARTES -->
+        <header class="debug-header">
+            <div class="debug-section debug-left">
+                <div class="debug-content">
+                    📋 ESQUERDO
+                </div>
+            </div>
+
+            <div class="debug-section debug-center">
+                <div class="debug-content">
+                    🎯 CENTRO
+                </div>
+            </div>
+
+            <div class="debug-section debug-right">
+                <div class="debug-content">
+                    🔔 DIREITO
+                </div>
+            </div>
+        </header>
+
+        <!-- Área do conteúdo principal -->
+        <article class="content px-4">
+            @Body
+        </article>
+    </div>
+</div>

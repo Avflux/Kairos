@@ -1,0 +1,178 @@
+﻿@page "/"
+@using kairos.Components.Layout
+
+<PageTitle>Kairos - Home</PageTitle>
+
+<div class="home-container">
+    <div class="welcome-section">
+        <h1>🏠 Bem-vindo ao Kairos</h1>
+        <p class="welcome-description">Sistema de gerenciamento de atividades e projetos para equipes de engenharia.</p>
+    </div>
+
+    <div class="quick-access-section">
+        <h2>Acesso Rápido às Atividades</h2>
+        <div class="activity-cards">
+            <a href="/atividades/civil" class="activity-card civil">
+                <div class="card-icon">🏗️</div>
+                <div class="card-content">
+                    <h3>Engenharia Civil</h3>
+                    <p>Gerencie projetos e atividades de engenharia civil</p>
+                </div>
+                <div class="card-arrow">→</div>
+            </a>
+
+            <a href="/atividades/eletromecanica" class="activity-card eletromecanica">
+                <div class="card-icon">⚡</div>
+                <div class="card-content">
+                    <h3>Eletromecânica</h3>
+                    <p>Organize sistemas elétricos e mecânicos</p>
+                </div>
+                <div class="card-arrow">→</div>
+            </a>
+
+            <a href="/atividades/spcs" class="activity-card spcs">
+                <div class="card-icon">🔬</div>
+                <div class="card-content">
+                    <h3>SPCS</h3>
+                    <p>Sistema de Controle e Supervisão</p>
+                </div>
+                <div class="card-arrow">→</div>
+            </a>
+        </div>
+    </div>
+</div>
+
+<style>
+    .home-container {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem;
+    }
+
+    .welcome-section {
+        text-align: center;
+        margin-bottom: 3rem;
+        padding: 2rem;
+        background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    }
+
+    .welcome-section h1 {
+        font-size: 2.5rem;
+        color: #343a40;
+        margin-bottom: 1rem;
+    }
+
+    .welcome-description {
+        font-size: 1.2rem;
+        color: #6c757d;
+        margin: 0;
+    }
+
+    .quick-access-section h2 {
+        font-size: 1.8rem;
+        color: #343a40;
+        margin-bottom: 1.5rem;
+        text-align: center;
+    }
+
+    .activity-cards {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 1.5rem;
+        margin-top: 2rem;
+    }
+
+    .activity-card {
+        display: flex;
+        align-items: center;
+        padding: 1.5rem;
+        background: white;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+        text-decoration: none;
+        color: inherit;
+        transition: all 0.3s ease;
+        border: 2px solid transparent;
+    }
+
+    .activity-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.12);
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .activity-card.civil:hover {
+        border-color: #28a745;
+    }
+
+    .activity-card.eletromecanica:hover {
+        border-color: #ffc107;
+    }
+
+    .activity-card.spcs:hover {
+        border-color: #17a2b8;
+    }
+
+    .card-icon {
+        font-size: 3rem;
+        margin-right: 1rem;
+        flex-shrink: 0;
+    }
+
+    .card-content {
+        flex: 1;
+    }
+
+    .card-content h3 {
+        margin: 0 0 0.5rem 0;
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #343a40;
+    }
+
+    .card-content p {
+        margin: 0;
+        color: #6c757d;
+        font-size: 0.95rem;
+    }
+
+    .card-arrow {
+        font-size: 1.5rem;
+        color: #007bff;
+        margin-left: 1rem;
+        transition: transform 0.3s ease;
+    }
+
+    .activity-card:hover .card-arrow {
+        transform: translateX(4px);
+    }
+
+    @@media (max-width: 768px) {
+        .home-container {
+            padding: 1rem;
+        }
+
+        .welcome-section h1 {
+            font-size: 2rem;
+        }
+
+        .welcome-description {
+            font-size: 1rem;
+        }
+
+        .activity-cards {
+            grid-template-columns: 1fr;
+        }
+
+        .activity-card {
+            padding: 1rem;
+        }
+
+        .card-icon {
+            font-size: 2.5rem;
+        }
+    }
+</style>

@@ -1,0 +1,26 @@
+@page "/atividades/spcs"
+@using kairos.Components.Kanban.Components
+@using kairos.Components.Layout
+
+<div class="kanban-container">
+    <KanbanBoard Context="spcs" 
+                 OnError="HandleKanbanError" 
+                 OnDataChanged="HandleDataChanged" />
+</div>
+
+@code {
+    private string? errorMessage;
+
+    private async Task HandleKanbanError(string error)
+    {
+        errorMessage = error;
+        Console.WriteLine($"Erro no Kanban SPCS: {error}");
+        StateHasChanged();
+    }
+
+    private async Task HandleDataChanged()
+    {
+        // Dados foram alterados, pode implementar lógica adicional se necessário
+        Console.WriteLine("Dados do Kanban SPCS foram alterados");
+    }
+}

@@ -1,0 +1,160 @@
+/* ===== COMPONENTE PERFIL DO MENU ===== */
+.menu-section.menu-profile {
+    flex: 0 0 50px !important;
+    /* Altura fixa de 50px */
+    min-height: 50px !important;
+    max-height: 50px !important;
+    justify-content: flex-start !important;
+    /* Alinha à esquerda */
+    align-items: center;
+    overflow: hidden !important;
+    display: flex !important;
+    width: 100% !important;
+    padding: 0.1rem !important; /* AJUSTE: Padding para margem interna */
+    /* background: red !important; /* DEBUG: Seção Perfil - comentado */
+}
+
+/* ===== COMPONENTE PERFIL DO MENU ===== */
+/*
+ * AJUSTES DE LAYOUT E DIMENSÕES:
+ * - min-height: Altura mínima da seção (atual: 150px)
+ * - gap: Espaçamento entre elementos (atual: 1rem)
+ * - font-size: Tamanhos das fontes
+ *
+ * EXEMPLOS DE AJUSTES:
+ * min-height: 120px;    → Seção menor
+ * min-height: 180px;    → Seção maior
+ * gap: 0.5rem;         → Elementos mais próximos
+ * gap: 1.5rem;         → Elementos mais afastados
+ */
+
+/* Esta regra foi movida para cima e consolidada */
+
+.menu-profile-content {
+    display: flex;
+    align-items: center;
+    /* AJUSTE: Centraliza verticalmente */
+    justify-content: flex-start;
+    /* AJUSTE: Alinha à esquerda */
+    width: 100%;
+    height: 100%;
+    padding-left: 1rem;
+    /* Espaçamento da borda esquerda */
+    /*
+     * AJUSTES DE DIMENSÃO:
+     * width: 100% → Ocupa toda largura
+     * height: 100% → Ocupa toda altura
+     * justify-content: flex-start → Alinha à esquerda
+     * justify-content: center → Centraliza horizontalmente
+     * align-items: center → Centraliza verticalmente
+     */
+}
+
+.profile-container {
+    display: flex;
+    flex-direction: row;
+    /* Avatar e nome lado a lado */
+    align-items: center;
+    gap: 0.50rem;
+    /* AJUSTE: Espaço entre avatar e informações */
+    color: white;
+    /* AJUSTE: Cor do texto (branco para menu escuro) */
+    text-align: left;
+    /* Alinha texto à esquerda */
+    /* background: green !important; /* DEBUG: Container do Perfil - comentado */
+    /*
+     * AJUSTES DE LAYOUT:
+     * flex-direction: column → Elementos empilhados verticalmente
+     * flex-direction: row → Elementos lado a lado
+     * align-items: center → Centraliza horizontalmente
+     * text-align: center → Centraliza texto
+     *
+     * EXEMPLOS DE CORES:
+     * color: #000000;       → Preto
+     * color: #666666;       → Cinza médio
+     * color: #ffffff;       → Branco (tema escuro)
+     */
+}
+
+.profile-avatar {
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    /* Impede que o avatar encolha */
+    /* background: blue !important; /* DEBUG: Avatar - comentado */
+}
+
+.profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    /* filter: brightness(0) invert(1) opacity(0.7); /* Filtro removido - estava fazendo a imagem sumir */
+    /* Seguindo o padrão dos ícones SVG dos botões */
+}
+
+/* CSS do fallback removido para não interferir na imagem */
+
+/*
+     * EXEMPLOS DE TAMANHOS DO AVATAR:
+     * font-size: 2.5rem;   → Avatar menor
+     * font-size: 3.5rem;   → Avatar maior
+     * font-size: 4rem;     → Avatar muito grande
+     *
+     * EXEMPLOS DE CORES DO AVATAR:
+     * color: rgba(255, 255, 255, 0.9); → Mais opaco
+     * color: rgba(255, 255, 255, 0.6); → Mais transparente
+     * color: #007bff;       → Azul
+     * color: #28a745;       → Verde
+     */
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    /* AJUSTE: Espaço entre nome e função */
+    /*
+     * AJUSTES DE ESPAÇAMENTO:
+     * gap: 0.3rem;         → Elementos mais próximos
+     * gap: 0.8rem;         → Espaçamento maior
+     * gap: 1rem;           → Espaçamento amplo
+     */
+}
+
+.profile-name {
+    font-size: 0.85rem;
+    /* AJUSTE: Tamanho do nome para caber em 50px */
+    font-weight: 600;
+    /* AJUSTE: Peso da fonte do nome */
+    color: #333333;
+    /* AJUSTE: Cor do nome (cinza escuro para melhor visibilidade) */
+    /*
+     * EXEMPLOS DE AJUSTES DO NOME:
+     * font-size: 1rem;     → Nome menor
+     * font-size: 1.3rem;   → Nome maior
+     * font-weight: 500;    → Peso médio
+     * font-weight: 700;    → Peso máximo (bold)
+     * color: #000000;      → Preto
+     * color: #007bff;      → Azul
+     */
+}
+
+.profile-role {
+    font-size: 0.9rem;
+    /* AJUSTE: Tamanho da função */
+    opacity: 0.8;
+    /* AJUSTE: Transparência da função */
+    color: #666666;
+    /* AJUSTE: Cor da função */
+    /*
+     * EXEMPLOS DE AJUSTES DA FUNÇÃO:
+     * font-size: 0.8rem;   → Texto menor
+     * font-size: 1rem;     → Texto maior
+     * opacity: 0.6;        → Mais transparente
+     * opacity: 1;          → Totalmente opaco
+     * color: #333333;      → Cinza escuro
+     * color: #999999;      → Cinza claro
+     */
+}

@@ -1,0 +1,38 @@
+/* ===== HEADER SIMPLIFICADO ===== */
+.app-header {
+    display: flex !important;
+    height: 80px !important;
+    background-color: #ffffff !important;
+    border: 3px solid #ff0000 !important;
+    width: 100% !important;
+}
+
+/* Seções do Header */
+.header-section {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 2px solid #007bff !important;
+    background-color: #e3f2fd !important;
+    margin: 5px !important;
+}
+
+/* Conteúdo do Header */
+.header-content {
+    font-size: 1.2rem !important;
+    font-weight: bold !important;
+    color: #007bff !important;
+    text-align: center !important;
+}
+
+/* ===== RESPONSIVIDADE ===== */
+@media (max-width: 768px) {
+    .app-header {
+        height: 60px !important;
+    }
+
+    .header-content {
+        font-size: 1rem !important;
+    }
+}

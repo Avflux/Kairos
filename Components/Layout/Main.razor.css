@@ -1,0 +1,117 @@
+/* ===== LAYOUT PRINCIPAL ===== */
+.page {
+    display: flex !important;
+    min-height: 100vh !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+/* ===== SIDEBAR/MENU VERTICAL ===== */
+.sidebar {
+    background: transparent !important; /* SIDEBAR SEM BACKGROUND */
+    width: 250px !important;
+    height: 100vh !important;
+    position: sticky !important;
+    top: 0 !important;
+    left: 0 !important;
+    z-index: 10 !important;
+    flex-shrink: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+}
+
+/* ===== ÁREA PRINCIPAL ===== */
+.main-layout {
+    flex: 1 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 100vh !important;
+    width: calc(100vw - 250px) !important;
+    background: #f8f9fa !important; /* Fundo neutro elegante */
+}
+
+/* ===== HEADER DE DEBUG - FORÇADO A APARECER ===== */
+.debug-header {
+    display: flex !important;
+    height: 80px !important;
+    background-color: #ffffff !important;
+    border: 5px solid #ff0000 !important;
+    width: 100% !important;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.debug-section {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border: 3px solid #007bff !important;
+    background-color: #e3f2fd !important;
+    margin: 8px !important;
+    border-radius: 10px !important;
+    min-height: 60px !important;
+}
+
+.debug-content {
+    font-size: 1.5rem !important;
+    font-weight: bold !important;
+    color: #007bff !important;
+    text-align: center !important;
+    background-color: #ffffff !important;
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    border: 2px solid #007bff !important;
+    box-shadow: 0 2px 6px rgba(0, 123, 255, 0.3) !important;
+}
+
+/* ===== CONTEÚDO PRINCIPAL ===== */
+.content {
+    flex: 1 !important;
+    padding: 2rem !important;
+    background: #ffffff !important; /* Fundo branco limpo */
+    overflow-y: auto !important;
+}
+
+/* ===== RESPONSIVIDADE ===== */
+@media (max-width: 768px) {
+    .page {
+        flex-direction: column !important;
+    }
+
+    .sidebar {
+        position: fixed !important;
+        top: 0 !important;
+        left: -250px !important;
+        transition: left 0.3s ease !important;
+        z-index: 200 !important;
+        height: 100vh !important;
+        width: 250px !important;
+    }
+
+    .sidebar.open {
+        left: 0 !important;
+    }
+
+    .main-layout {
+        width: 100% !important;
+    }
+
+    .debug-header {
+        height: 60px !important;
+    }
+
+    .debug-section {
+        margin: 4px !important;
+        min-height: 45px !important;
+    }
+
+    .debug-content {
+        font-size: 1.2rem !important;
+        padding: 8px 15px !important;
+    }
+
+    .content {
+        padding: 1rem !important;
+    }
+}

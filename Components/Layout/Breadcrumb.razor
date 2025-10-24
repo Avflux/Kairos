@@ -1,0 +1,136 @@
+@using Microsoft.AspNetCore.Components.Routing
+@implements IDisposable
+@inject NavigationManager Navigation
+
+<nav class="activity-breadcrumb" aria-label="Breadcrumb">
+    @if (BreadcrumbItems.Any())
+    {
+        @for (int i = 0; i < BreadcrumbItems.Count; i++)
+        {
+            var item = BreadcrumbItems[i];
+            var isLast = i == BreadcrumbItems.Count - 1;
+            
+            @if (i > 0)
+            {
+                <span class="separator" aria-hidden="true">›</span>
+            }
+            
+            @if (isLast)
+            {
+                <span class="current" aria-current="page">@item.Title</span>
+            }
+            else if (!string.IsNullOrEmpty(item.Url))
+            {
+                <a href="@item.Url" @onclick="() => NavigateToUrl(item.Url)" @onclick:preventDefault="false">
+                    @item.Title
+                </a>
+            }
+            else
+            {
+                <span>@item.Title</span>
+            }
+        }
+    }
+</nav>
+
+@code {
+    [Parameter] public List<BreadcrumbItem> Items { get; set; } = new();
+    
+    private List<BreadcrumbItem> BreadcrumbItems = new();
+    private string currentUrl = string.Empty;
+
+    protected override void OnInitialized()
+    {
+        Navigation.LocationChanged += OnLocationChanged;
+        UpdateBreadcrumb();
+    }
+
+    protected override void OnParametersSet()
+    {
+        UpdateBreadcrumb();
+    }
+
+    private void OnLocationChanged(object? sender, LocationChangedEventArgs e)
+    {
+        UpdateBreadcrumb();
+        InvokeAsync(StateHasChanged);
+    }
+
+    private void UpdateBreadcrumb()
+    {
+        currentUrl = Navigation.ToBaseRelativePath(Navigation.Uri);
+        
+        BreadcrumbItems.Clear();
+        
+        // Always add Home
+        BreadcrumbItems.Add(new BreadcrumbItem { Title = "Home", Url = "/" });
+        
+        // Add custom items if provided
+        if (Items.Any())
+        {
+            BreadcrumbItems.AddRange(Items);
+        }
+        else
+        {
+            // Auto-generate breadcrumb based on URL
+            GenerateAutoBreadcrumb();
+        }
+    }
+
+    private void GenerateAutoBreadcrumb()
+    {
+        var segments = currentUrl.Split('/', StringSplitOptions.RemoveEmptyEntries);
+        
+        if (segments.Length > 0)
+        {
+            var currentPath = "";
+            
+            for (int i = 0; i < segments.Length; i++)
+            {
+                currentPath += "/" + segments[i];
+                var isLast = i == segments.Length - 1;
+                
+                var title = GetTitleForSegment(segments[i]);
+                
+                BreadcrumbItems.Add(new BreadcrumbItem 
+                { 
+                    Title = title, 
+                    Url = isLast ? null : currentPath 
+                });
+            }
+        }
+    }
+
+    private string GetTitleForSegment(string segment)
+    {
+        return segment.ToLower() switch
+        {
+            "atividades" => "Atividades",
+            "civil" => "🏗️ Civil",
+            "eletromecanica" => "⚡ Eletromecânica", 
+            "spcs" => "🔬 SPCS",
+            "arquivos" => "Arquivos",
+            "videos" => "Vídeos",
+            "dashboards" => "Dashboards",
+            _ => char.ToUpper(segment[0]) + segment[1..].ToLower()
+        };
+    }
+
+    private void NavigateToUrl(string url)
+    {
+        Navigation.NavigateTo(url);
+    }
+
+    public void Dispose()
+    {
+        Navigation.LocationChanged -= OnLocationChanged;
+    }
+}
+
+@code {
+    public class BreadcrumbItem
+    {
+        public string Title { get; set; } = string.Empty;
+        public string? Url { get; set; }
+    }
+}

@@ -1,0 +1,308 @@
+/* ===== COMPONENTE BOTÕES DO MENU ===== */
+/*
+ * AJUSTES DE LAYOUT E ESPaçAMENTO:
+ * - flex: Define proporção da seção (atual: 2 = 2x maior que outras)
+ * - padding: Espaçamento interno (atual: 1rem = 16px)
+ * - gap: Espaço entre botões (atual: 0.8rem)
+ *
+ * EXEMPLOS DE AJUSTES:
+ * flex: 1;              → Seção menor (igual às outras)
+ * flex: 3;              → Seção maior (3x maior)
+ * padding: 0.5rem;      → Padding menor
+ * padding: 1.5rem;      → Padding maior
+ * gap: 0.5rem;          → Botões mais próximos
+ * gap: 1.2rem;          → Botões mais afastados
+ */
+
+.menu-section.menu-buttons {
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    flex: 4 !important;               /* AJUSTE: Proporção da seção de botões */
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start; /* AJUSTE: Alinha no topo */
+    /*
+     * AJUSTES DE ALINHAMENTO:
+     * justify-content: flex-start → Alinha no topo
+     * justify-content: center → Centraliza verticalmente
+     * justify-content: flex-end → Alinha na base
+     */
+}
+
+.menu-buttons-spacer {
+    flex: 0.01;             /* AJUSTE: Controla espaço vazio acima dos botões */
+    /*
+     * EXEMPLOS DE AJUSTES DO SPACER:
+     * flex: 0;              → Sem espaço (botões no topo absoluto)
+     * flex: 0.1;            → Pouco espaço (atual)
+     * flex: 0.3;            → Mais espaço acima
+     * flex: 1;              → Muito espaço (empurra botões para baixo)
+     */
+}
+
+.menu-buttons-content {
+    width: 100%;
+    display: flex;
+    align-items: flex-start;    /* AJUSTE: Alinha botões no topo */
+    justify-content: center;    /* AJUSTE: Centraliza horizontalmente */
+    padding-top: 0rem;        /* AJUSTE: Espaço acima dos botões */
+    overflow-y: auto;          /* AJUSTE: Adiciona barra de rolagem vertical quando necessário */
+    max-height: 60vh;          /* AJUSTE: Limita altura para ativar a barra de rolagem */
+    /*
+     * AJUSTES DE POSICIONAMENTO:
+     * align-items: flex-start → Botões no topo do espaço disponível
+     * align-items: center → Botões centralizados verticalmente
+     * align-items: flex-end → Botões na base do espaço
+     * padding-top: 0;       → Sem espaço acima
+     * padding-top: 1rem;    → Mais espaço acima
+     */
+}
+
+.menu-nav {
+    width: 100%;
+    max-width: 300px;          /* AJUSTE: Largura máxima dos botões */
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;               /* AJUSTE: Espaço entre botões */
+    /*
+     * EXEMPLOS DE AJUSTES DE LARGURA:
+     * max-width: 250px;     → Botões mais estreitos
+     * max-width: 350px;     → Botões mais largos
+     * max-width: 100%;      → Botões ocupam toda largura disponível
+     *
+     * EXEMPLOS DE ESPAÇAMENTO:
+     * gap: 0.5rem;          → Botões mais próximos
+     * gap: 1rem;            → Espaçamento padrão
+     * gap: 1.5rem;          → Botões mais afastados
+     */
+}
+
+/* ===== BOTÕES PROFISSIONAIS ===== */
+/*
+ * AJUSTES DE APARÊNCIA DOS BOTÕES:
+ * - padding: Espaçamento interno (atual: 0.9rem x 1.2rem)
+ * - border-radius: Cantos arredondados (atual: 12px)
+ * - font-size: Tamanho da fonte (atual: 0.95rem)
+ * - font-weight: Peso da fonte (atual: 500)
+ *
+ * EXEMPLOS DE AJUSTES:
+ * padding: 0.7rem 1rem; → Padding menor
+ * padding: 1.1rem 1.4rem; → Padding maior
+ * border-radius: 8px;   → Cantos menos arredondados
+ * border-radius: 16px;  → Cantos mais arredondados
+ * font-size: 0.9rem;   → Texto menor
+ * font-size: 1rem;     → Texto maior
+ * font-weight: 400;     → Texto normal
+ * font-weight: 600;     → Texto semi-bold
+ */
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.3rem 0.3rem;    /* AJUSTE: Espaçamento interno do botão */
+    color: #333333 !important; /* AJUSTE: Cor do texto */
+    text-decoration: none;
+    border-radius: 6px;        /* AJUSTE: Arredondamento dos cantos */
+    transition: all 0.3s ease;  /* AJUSTE: Velocidade da transição */
+    border: 1px solid rgba(0, 0, 0, 0.15); /* AJUSTE: Cor e espessura da borda */
+    background: rgba(255, 255, 255, 0.08); /* AJUSTE: Cor de fundo */
+    backdrop-filter: blur(10px); /* AJUSTE: Intensidade do blur */
+    font-weight: 500;           /* AJUSTE: Peso da fonte */
+    font-size: 0.8rem;        /* AJUSTE: Tamanho da fonte */
+    letter-spacing: 0.5px;      /* AJUSTE: Espaçamento entre letras */
+    position: relative;
+    overflow: hidden;
+    /*
+     * EXEMPLOS DE PERSONALIZAÇÃO:
+     *
+     * CORES DO TEXTO:
+     * color: #000000;       → Preto
+     * color: #ffffff;       → Branco
+     * color: #007bff;       → Azul
+     *
+     * BACKGROUND E BORDA:
+     * background: rgba(255, 255, 255, 0.1); → Fundo mais sólido
+     * background: rgba(255, 255, 255, 0.05); → Fundo mais transparente
+     * border: 2px solid rgba(0, 0, 0, 0.2); → Borda mais grossa
+     *
+     * TIPOGRAFIA:
+     * font-size: 1rem;      → Texto maior
+     * font-weight: 600;     → Texto mais pesado
+     * letter-spacing: 0.3px; → Espaçamento menor
+     *
+     * TRANSIÇÕES:
+     * transition: all 0.2s ease; → Transição mais rápida
+     * transition: all 0.4s ease; → Transição mais lenta
+     */
+}
+
+.nav-link::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
+    transition: left 0.5s;
+    /*
+     * AJUSTES DO EFEITO SHIMMER:
+     * background: linear-gradient(...) → Cor e direção do brilho
+     * transition: left 0.3s; → Velocidade do efeito
+     * transition: left 0.8s; → Efeito mais lento
+     */
+}
+
+.nav-link:hover::before {
+    left: 100%;
+}
+
+.nav-link:hover {
+    background: rgba(255, 255, 255, 0.15); /* AJUSTE: Fundo no hover */
+    border-color: rgba(0, 0, 0, 0.3);      /* AJUSTE: Borda no hover */
+    transform: translateY(-2px);            /* AJUSTE: Elevação no hover */
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3); /* AJUSTE: Sombra no hover */
+    color: #222222 !important;             /* AJUSTE: Cor do texto no hover */
+    /*
+     * EXEMPLOS DE EFEITOS HOVER:
+     * transform: translateY(-1px); → Elevação menor
+     * transform: translateY(-3px); → Elevação maior
+     * box-shadow: 0 4px 15px rgba(0,0,0,0.2); → Sombra menor
+     * box-shadow: 0 12px 35px rgba(0,0,0,0.4); → Sombra maior
+     * background: rgba(255,255,255,0.2); → Fundo mais sólido no hover
+     */
+}
+
+.nav-link:active {
+    transform: translateY(0);               /* AJUSTE: Comportamento no clique */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2); /* AJUSTE: Sombra no clique */
+    /*
+     * AJUSTES DE ESTADO ATIVO:
+     * transform: translateY(0); → Sem elevação no clique
+     * transform: translateY(1px); → Leve afundamento
+     * box-shadow: 0 2px 8px rgba(0,0,0,0.3); → Sombra menor no clique
+     */
+}
+
+.nav-link .bi {
+    margin-right: 0.8rem;   /* AJUSTE: Espaço entre ícone e texto */
+    width: 1.3rem;          /* AJUSTE: Largura do ícone */
+    height: 1.3rem;         /* AJUSTE: Altura do ícone */
+    flex-shrink: 0;         /* AJUSTE: Ícone não encolhe */
+    /*
+     * EXEMPLOS DE AJUSTES DE ÍCONES:
+     * margin-right: 0.5rem; → Ícone mais próximo do texto
+     * margin-right: 1rem;   → Ícone mais afastado
+     * width: 1rem; height: 1rem; → Ícones menores
+     * width: 1.5rem; height: 1.5rem; → Ícones maiores
+     * flex-shrink: 1;       → Ícone pode encolher se necessário
+     */
+}
+
+/* ===== BOTÃO ATIVIDADES ESPECÍFICO ===== */
+/*
+ * Estilos específicos para o botão ATIVIDADES (sem ícones e efeitos)
+ */
+
+.atividades-dropdown .nav-link,
+.atividades-button {
+    /* Remove todos os efeitos glassmorphism do botão atividades */
+    background: transparent !important;
+    border: none !important;  /* Remove todas as bordas */
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    color: #333333 !important;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    padding: 0.3rem 0.3rem;
+    border-radius: 6px;
+    width: 100%;  /* Ocupa 100% da largura como os outros botões */
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.2s ease;
+    /*
+     * AJUSTES DO BOTÃO ATIVIDADES:
+     * background: transparent → Sem fundo glassmorphism
+     * border: none → Sem bordas (como solicitado)
+     * width: 100% → Ocupa toda largura como os outros botões
+     * padding: 0.3rem 0.3rem → Padding mínimo
+     * border-radius: 6px → Cantos levemente arredondados
+     */
+}
+
+.atividades-dropdown .nav-link:hover,
+.atividades-button:hover {
+    background: rgba(0, 0, 0, 0.05) !important;
+    color: #222222 !important;
+}
+
+.submenu-simple {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;           /* Espaçamento mínimo entre os botões */
+    margin-top: 0.1rem;    /* Pequeno espaço entre botão principal e submenus */
+    width: 100%;
+}
+
+.submenu-button {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start; /* Alinha à esquerda */
+    padding: 0.4rem 0.6rem; /* Padding ajustado para ícones */
+    color: #333333 !important;
+    text-decoration: none;
+    background: rgba(255, 255, 255, 0.05); /* Fundo muito sutil */
+    border: 1px solid rgba(0, 0, 0, 0.08); /* Borda muito sutil */
+    border-radius: 4px;    /* Cantos pouco arredondados */
+    transition: all 0.2s ease;
+    font-size: 0.75rem;    /* Texto menor */
+    font-weight: 400;      /* Peso normal */
+    min-height: 32px;      /* Altura mínima para melhor clique */
+    width: 100%;
+    /*
+     * AJUSTES DO SUBMENU COM ÍCONES:
+     * justify-content: flex-start → Alinha itens à esquerda
+     * padding: 0.4rem 0.6rem → Padding ajustado para ícones
+     * min-height: 32px → Altura para acomodar ícones SVG
+     */
+}
+
+.submenu-button:hover {
+    background: rgba(0, 0, 0, 0.08); /* Fundo escuro sutil no hover */
+    border-color: rgba(0, 0, 0, 0.15); /* Borda mais escura no hover */
+    color: #222222 !important;
+    transform: none;       /* Sem transformação */
+    box-shadow: none;      /* Sem sombra */
+}
+
+.submenu-icon-svg {
+    width: 20px;
+    height: 20px;
+    margin-right: 0.6rem;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /*
+     * AJUSTES DOS ÍCONES SVG INLINE:
+     * width: 20px; height: 20px → Tamanho dos ícones SVG
+     * margin-right: 0.6rem → Espaçamento entre ícone e texto
+     * flex-shrink: 0 → Ícone mantém tamanho
+     * display: flex → Para centralizar o SVG interno
+     * align-items: center; justify-content: center → Centraliza conteúdo
+     */
+}
+
+.submenu-icon-svg svg {
+    width: 100%;
+    height: 100%;
+    fill: currentColor; /* Herda a cor do texto pai */
+}
+
+.submenu-text {
+    font-size: 0.75rem;    /* Texto menor */
+    font-weight: 400;      /* Peso normal */
+    letter-spacing: 0.3px; /* Espaçamento menor */
+    text-align: left;      /* Texto alinhado à esquerda */
+}

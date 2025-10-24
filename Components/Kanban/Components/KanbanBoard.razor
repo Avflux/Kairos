@@ -1,0 +1,811 @@
+@using kairos.Components.Kanban.Models
+@using kairos.Components.Kanban.Services
+@using kairos.Components.Kanban.Extensions
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using System.Text.Json
+@namespace kairos.Components.Kanban.Components
+
+<div class="kanban-board @(IsLoading ? "loading" : "") @(HasError ? "error" : "")"
+     role="application"
+     aria-label="Sistema de quadros Kanban"
+     aria-describedby="kanban-instructions">
+    @if (IsLoading)
+    {
+        <div class="loading-container">
+            <div class="loading-spinner"></div>
+            <p class="loading-text">
+                @if (_retryCount == 0)
+                {
+                    <span>Carregando quadros...</span>
+                }
+                else
+                {
+                    <span>Tentativa @(_retryCount) de @(MAX_RETRY_ATTEMPTS)...</span>
+                }
+            </p>
+            @if (_retryCount > 0)
+            {
+                <div class="retry-progress">
+                    <div class="retry-progress-bar" style="width: @((_retryCount / (float)MAX_RETRY_ATTEMPTS) * 100)%"></div>
+                </div>
+            }
+        </div>
+    }
+    else if (HasError)
+    {
+        <div class="error-container">
+            <div class="error-icon">⚠️</div>
+            <h3>Erro ao carregar dados</h3>
+            <p class="error-message">@ErrorMessage</p>
+            <div class="error-actions">
+                <button class="btn-retry" @onclick="RetryLoadData">
+                    <span class="retry-icon">🔄</span>
+                    Tentar novamente
+                </button>
+                <button class="btn-create-default" @onclick="CreateDefaultData">
+                    <span class="create-icon">📋</span>
+                    Criar quadros padrão
+                </button>
+            </div>
+            <div class="error-details">
+                <details>
+                    <summary>Detalhes técnicos</summary>
+                    <p class="technical-details">
+                        Contexto: @Context<br/>
+                        Tentativas realizadas: @(_retryCount)<br/>
+                        Última tentativa: @DateTime.Now.ToString("HH:mm:ss")
+                    </p>
+                </details>
+            </div>
+        </div>
+    }
+    else
+    {
+        <!-- Screen reader instructions -->
+        <div id="kanban-instructions" class="sr-only">
+            Use as setas do teclado para navegar entre quadros e cartões. 
+            Pressione Enter para editar, Escape para cancelar, 
+            Ctrl+Shift+N para novo quadro, Ctrl+Shift+C para novo cartão.
+        </div>
+
+        <div class="kanban-header">
+            <div class="header-left">
+                <h2 class="kanban-title" id="kanban-main-title">Quadros de Atividades</h2>
+                @if (IsSaving)
+                {
+                    <div class="saving-indicator">
+                        <div class="saving-spinner"></div>
+                        <span class="saving-text">Salvando...</span>
+                    </div>
+                }
+                else if (_hasUnsavedChanges)
+                {
+                    <div class="unsaved-indicator">
+                        <span class="unsaved-icon">●</span>
+                        <span class="unsaved-text">Alterações não salvas</span>
+                    </div>
+                }
+                else if (!IsOnline)
+                {
+                    <div class="offline-indicator">
+                        <span class="offline-icon">⚠️</span>
+                        <span class="offline-text">Modo offline</span>
+                    </div>
+                }
+            </div>
+            <button class="btn-add-board" 
+                    @onclick="StartAddBoard" 
+                    @onkeydown="HandleAddBoardKeyDown"
+                    title="Adicionar novo quadro (Ctrl+Shift+N)"
+                    aria-label="Adicionar novo quadro. Atalho: Ctrl+Shift+N"
+                    aria-describedby="add-board-help"
+                    disabled="@(IsLoading || IsSaving)">
+                <span class="icon">+</span>
+                <span class="text">Novo Quadro</span>
+            </button>
+        </div>
+
+        <div class="kanban-content" 
+             @ondragover="HandleGlobalDragOver"
+             @ondragover:preventDefault="true"
+             @ondrop="HandleGlobalDrop"
+             @ondrop:preventDefault="true"
+             @ondragend="HandleGlobalDragEnd"
+             @onkeydown="HandleGlobalKeyDown"
+             tabindex="0"
+             role="region"
+             aria-labelledby="kanban-main-title"
+             aria-live="polite"
+             aria-atomic="false">
+            
+            <div class="boards-container"
+                 role="group"
+                 aria-label="Lista de quadros Kanban">
+                @if (SortedBoards.Count == 0)
+                {
+                    <div class="empty-kanban" 
+                         role="status" 
+                         aria-live="polite">
+                        <div class="empty-icon" aria-hidden="true">📋</div>
+                        <h3>Nenhum quadro encontrado</h3>
+                        <p>Comece criando seu primeiro quadro de atividades</p>
+                        <button class="btn-create-first" 
+                                @onclick="StartAddBoard"
+                                @onkeydown="HandleAddBoardKeyDown"
+                                aria-describedby="add-board-help">
+                            Criar primeiro quadro
+                        </button>
+                        <div id="add-board-help" class="sr-only">
+                            Pressione Enter ou Espaço para criar um novo quadro
+                        </div>
+                    </div>
+                }
+                else
+                {
+                    @for (int i = 0; i < SortedBoards.Count; i++)
+                    {
+                        var board = SortedBoards[i];
+                        var boardIndex = i;
+                        
+                        @if (ShowBoardDropIndicator && BoardDropIndicatorPosition == boardIndex)
+                        {
+                            <div class="board-drop-indicator"></div>
+                        }
+                        
+                        <div class="board-wrapper" 
+                             @ondragover="@((e) => HandleBoardAreaDragOver(e, boardIndex))"
+                             @ondragover:preventDefault="true">
+                            <BoardColumn Board="@board" 
+                                       Context="@Context"
+                                       BoardIndex="@boardIndex"
+                                       TotalBoards="@SortedBoards.Count"
+                                       OnBoardUpdated="HandleBoardUpdated"
+                                       OnBoardDeleted="HandleBoardDeleted"
+                                       OnCardMoved="HandleCardMoved"
+                                       OnBoardMoved="HandleBoardMoved"
+                                       IsGlobalDragging="@IsDragging" />
+                        </div>
+                    }
+                    
+                    @if (ShowBoardDropIndicator && BoardDropIndicatorPosition == SortedBoards.Count)
+                    {
+                        <div class="board-drop-indicator"></div>
+                    }
+                }
+            </div>
+        </div>
+
+        @if (IsAddingBoard)
+        {
+            <div class="add-board-overlay" 
+                 @onclick="CancelAddBoard"
+                 role="dialog"
+                 aria-modal="true"
+                 aria-labelledby="add-board-title">
+                <div class="add-board-dialog" 
+                     @onclick:stopPropagation="true"
+                     @onkeydown="HandleAddBoardDialogKeyDown">
+                    <h4 id="add-board-title">Novo Quadro</h4>
+                    <label for="new-board-input" class="sr-only">Título do quadro</label>
+                    <input type="text" 
+                           id="new-board-input"
+                           class="new-board-input" 
+                           @bind="NewBoardTitle" 
+                           @onkeypress="HandleNewBoardKeyPress"
+                           @ref="newBoardInput"
+                           placeholder="Digite o título do quadro..."
+                           maxlength="100"
+                           aria-describedby="board-title-help"
+                           aria-required="true" />
+                    <div id="board-title-help" class="sr-only">
+                        Digite um título para o novo quadro. Pressione Enter para criar ou Escape para cancelar.
+                    </div>
+                    <div class="add-board-actions">
+                        <button class="btn-save" 
+                                @onclick="SaveNewBoard"
+                                aria-describedby="save-board-help">Criar</button>
+                        <button class="btn-cancel" 
+                                @onclick="CancelAddBoard"
+                                aria-describedby="cancel-board-help">Cancelar</button>
+                    </div>
+                    <div id="save-board-help" class="sr-only">Criar o novo quadro</div>
+                    <div id="cancel-board-help" class="sr-only">Cancelar criação do quadro</div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    [Parameter] public string Context { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> OnError { get; set; }
+    [Parameter] public EventCallback OnDataChanged { get; set; }
+    
+    [Inject] private IKanbanService KanbanService { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+
+    private KanbanData? KanbanData { get; set; }
+    private bool IsLoading { get; set; } = true;
+    private bool HasError { get; set; } = false;
+    private string ErrorMessage { get; set; } = string.Empty;
+    private bool IsAddingBoard { get; set; } = false;
+    private bool ShowBoardDropIndicator { get; set; } = false;
+    private bool IsDragging { get; set; } = false;
+    private bool IsSaving { get; set; } = false;
+    private bool IsOnline { get; set; } = true;
+    private DateTime LastSuccessfulSave { get; set; } = DateTime.Now;
+    
+    private string NewBoardTitle { get; set; } = string.Empty;
+    private int BoardDropIndicatorPosition { get; set; } = -1;
+    
+    private ElementReference newBoardInput;
+    private Timer? _autoSaveTimer;
+    private bool _hasUnsavedChanges = false;
+    private int _retryCount = 0;
+    private const int MAX_RETRY_ATTEMPTS = 3;
+
+    private List<Board> SortedBoards => KanbanData?.Boards.OrderBy(b => b.Order).ToList() ?? new List<Board>();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadDataAsync();
+        
+        // Configurar auto-save timer (salva a cada 30 segundos se houver mudanças)
+        _autoSaveTimer = new Timer(AutoSaveCallback, null, TimeSpan.FromSeconds(30), TimeSpan.FromSeconds(30));
+        
+        // Configurar verificação de conectividade
+        await CheckConnectivity();
+    }
+
+    private async Task CheckConnectivity()
+    {
+        try
+        {
+            // Tentar uma operação simples para verificar conectividade
+            await KanbanService.LoadDataAsync(Context ?? "test");
+            IsOnline = true;
+        }
+        catch
+        {
+            IsOnline = false;
+        }
+        
+        StateHasChanged();
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (!string.IsNullOrEmpty(Context) && (KanbanData == null || KanbanData.Context != Context))
+        {
+            await LoadDataAsync();
+        }
+    }
+
+    public void Dispose()
+    {
+        _autoSaveTimer?.Dispose();
+        
+        // Cleanup resources
+        
+        // Salvar dados pendentes antes de destruir o componente
+        if (_hasUnsavedChanges && KanbanData != null)
+        {
+            _ = Task.Run(async () => await SaveDataAsync());
+        }
+    }
+
+    #region Data Loading and Saving
+
+    private async Task LoadDataAsync()
+    {
+        if (string.IsNullOrWhiteSpace(Context))
+        {
+            SetError("Contexto não especificado");
+            return;
+        }
+
+        try
+        {
+            IsLoading = true;
+            HasError = false;
+            StateHasChanged();
+
+            // Simular delay mínimo para melhor UX (evitar flicker)
+            var loadTask = KanbanService.LoadDataAsync(Context);
+            var delayTask = Task.Delay(300); // Delay mínimo de 300ms
+            
+            await Task.WhenAll(loadTask, delayTask);
+            KanbanData = await loadTask;
+            
+            // Reset retry count on successful load
+            _retryCount = 0;
+            
+            IsLoading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            _retryCount++;
+            
+            if (_retryCount <= MAX_RETRY_ATTEMPTS)
+            {
+                Console.WriteLine($"Tentativa {_retryCount} de {MAX_RETRY_ATTEMPTS} falhou. Tentando novamente em {_retryCount * 1000}ms...");
+                
+                // Delay progressivo: 1s, 2s, 3s
+                await Task.Delay(_retryCount * 1000);
+                await LoadDataAsync();
+            }
+            else
+            {
+                // Criar dados padrão como fallback
+                try
+                {
+                    Console.WriteLine($"Criando dados padrão como fallback após {MAX_RETRY_ATTEMPTS} tentativas falhadas");
+                    
+                    KanbanData = new KanbanData
+                    {
+                        Context = Context,
+                        Boards = new List<Board>
+                        {
+                            new Board { Title = "A Fazer", Order = 0 },
+                            new Board { Title = "Em Progresso", Order = 1 },
+                            new Board { Title = "Concluído", Order = 2 }
+                        }
+                    };
+                    
+                    IsLoading = false;
+                    HasError = false; // Não mostrar erro se conseguiu criar dados padrão
+                    StateHasChanged();
+                    
+                    // Tentar salvar os dados padrão
+                    await SaveDataAsync();
+                    
+                    Console.WriteLine("Dados padrão criados com sucesso");
+                }
+                catch (Exception fallbackEx)
+                {
+                    SetError($"Erro crítico: Não foi possível carregar nem criar dados padrão. {ex.Message}");
+                    Console.WriteLine($"Erro crítico no fallback: {fallbackEx}");
+                }
+            }
+        }
+    }
+
+    private async Task SaveDataAsync()
+    {
+        if (KanbanData == null) return;
+
+        var saveRetryCount = 0;
+        const int maxSaveRetries = 2;
+
+        while (saveRetryCount <= maxSaveRetries)
+        {
+            try
+            {
+                IsSaving = true;
+                StateHasChanged();
+                
+                await KanbanService.SaveDataAsync(KanbanData);
+                _hasUnsavedChanges = false;
+                IsOnline = true;
+                LastSuccessfulSave = DateTime.Now;
+                
+                // Limpar dados de drag-and-drop após salvar
+                await JSRuntime.InvokeVoidAsync("kanbanDragDrop.clearData");
+                
+                // Sucesso - sair do loop
+                break;
+            }
+            catch (Exception ex)
+            {
+                saveRetryCount++;
+                Console.WriteLine($"Erro ao salvar dados (tentativa {saveRetryCount}): {ex.Message}");
+                
+                if (saveRetryCount <= maxSaveRetries)
+                {
+                    // Tentar novamente após delay
+                    await Task.Delay(1000 * saveRetryCount);
+                }
+                else
+                {
+                    // Falha definitiva após todas as tentativas
+                    Console.WriteLine($"Falha definitiva ao salvar após {maxSaveRetries + 1} tentativas");
+                    IsOnline = false;
+                    
+                    // Mostrar erro apenas se não for auto-save ou se for crítico
+                    if (_hasUnsavedChanges)
+                    {
+                        SetError($"Erro ao salvar alterações após {maxSaveRetries + 1} tentativas: {ex.Message}");
+                    }
+                }
+            }
+            finally
+            {
+                if (saveRetryCount > maxSaveRetries || !_hasUnsavedChanges)
+                {
+                    IsSaving = false;
+                    StateHasChanged();
+                }
+            }
+        }
+    }
+
+    private void AutoSaveCallback(object? state)
+    {
+        if (_hasUnsavedChanges && !IsSaving)
+        {
+            _ = Task.Run(async () => await SaveDataAsync());
+        }
+    }
+
+    // Método para garantir resposta rápida da interface (< 500ms)
+    private async Task<T> WithTimeout<T>(Task<T> task, int timeoutMs = 500)
+    {
+        var timeoutTask = Task.Delay(timeoutMs);
+        var completedTask = await Task.WhenAny(task, timeoutTask);
+        
+        if (completedTask == timeoutTask)
+        {
+            throw new TimeoutException($"Operação excedeu o tempo limite de {timeoutMs}ms");
+        }
+        
+        return await task;
+    }
+
+    private void MarkAsChanged()
+    {
+        _hasUnsavedChanges = true;
+        KanbanData?.UpdateLastModified();
+    }
+
+    private void SetError(string message)
+    {
+        IsLoading = false;
+        HasError = true;
+        ErrorMessage = message;
+        StateHasChanged();
+        
+        _ = OnError.InvokeAsync(message);
+    }
+
+    private async Task RetryLoadData()
+    {
+        _retryCount = 0; // Reset retry count for manual retry
+        await LoadDataAsync();
+    }
+
+    private async Task CreateDefaultData()
+    {
+        try
+        {
+            IsLoading = true;
+            HasError = false;
+            StateHasChanged();
+
+            KanbanData = new KanbanData
+            {
+                Context = Context,
+                Boards = new List<Board>
+                {
+                    new Board { Title = "A Fazer", Order = 0 },
+                    new Board { Title = "Em Progresso", Order = 1 },
+                    new Board { Title = "Concluído", Order = 2 }
+                }
+            };
+
+            await SaveDataAsync();
+            
+            IsLoading = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            SetError($"Erro ao criar dados padrão: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region Board Management
+
+    private async Task StartAddBoard()
+    {
+        IsAddingBoard = true;
+        NewBoardTitle = string.Empty;
+        StateHasChanged();
+        
+        await Task.Delay(10);
+        await newBoardInput.FocusAsync();
+    }
+
+    private async Task HandleNewBoardKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveNewBoard();
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelAddBoard();
+        }
+    }
+
+    private async Task SaveNewBoard()
+    {
+        if (string.IsNullOrWhiteSpace(NewBoardTitle))
+        {
+            CancelAddBoard();
+            return;
+        }
+
+        try
+        {
+            var newBoard = await KanbanService.CreateBoardAsync(Context, NewBoardTitle.Trim());
+            
+            if (KanbanData != null)
+            {
+                KanbanData.Boards.Add(newBoard);
+                MarkAsChanged();
+                await SaveDataAsync();
+            }
+            
+            NewBoardTitle = string.Empty;
+            IsAddingBoard = false;
+            StateHasChanged();
+            
+            await OnDataChanged.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao criar quadro: {ex.Message}");
+            SetError($"Erro ao criar quadro: {ex.Message}");
+        }
+    }
+
+    private void CancelAddBoard()
+    {
+        IsAddingBoard = false;
+        NewBoardTitle = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task HandleBoardUpdated(Board updatedBoard)
+    {
+        if (KanbanData == null) return;
+
+        var existingBoard = KanbanData.GetBoardById(updatedBoard.Id);
+        if (existingBoard != null)
+        {
+            // Atualizar propriedades do quadro
+            existingBoard.Title = updatedBoard.Title;
+            existingBoard.LastModified = updatedBoard.LastModified;
+            
+            MarkAsChanged();
+            await SaveDataAsync();
+            StateHasChanged();
+            
+            await OnDataChanged.InvokeAsync();
+        }
+    }
+
+    private async Task HandleBoardDeleted(Board deletedBoard)
+    {
+        if (KanbanData == null) return;
+
+        KanbanData.Boards.RemoveAll(b => b.Id == deletedBoard.Id);
+        KanbanData.NormalizeOrders();
+        
+        MarkAsChanged();
+        await SaveDataAsync();
+        StateHasChanged();
+        
+        await OnDataChanged.InvokeAsync();
+    }
+
+    #endregion
+
+    #region Card Management
+
+    private async Task HandleCardMoved(Card movedCard)
+    {
+        // Recarregar dados para garantir consistência após movimentação de cartão
+        await LoadDataAsync();
+        
+        // Marcar como alterado e salvar automaticamente
+        MarkAsChanged();
+        await SaveDataAsync();
+        
+        await OnDataChanged.InvokeAsync();
+    }
+
+    #endregion
+
+    #region Global Drag and Drop Coordination
+
+    private async Task HandleGlobalDragOver(DragEventArgs e)
+    {
+        e.DataTransfer.DropEffect = "move";
+        
+        // Coordenar estado global de drag
+        if (!IsDragging)
+        {
+            IsDragging = true;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleGlobalDrop(DragEventArgs e)
+    {
+        ShowBoardDropIndicator = false;
+        IsDragging = false;
+        
+        try
+        {
+            // Verificar se é um quadro sendo arrastado
+            var boardData = await e.DataTransfer.GetDataAsync(JSRuntime, DragDropConstants.BoardDataType);
+            if (!string.IsNullOrEmpty(boardData))
+            {
+                var boardDragData = JsonSerializer.Deserialize<DragDropData>(boardData);
+                if (boardDragData != null && boardDragData.DragType == "board")
+                {
+                    // Mover para o final se solto na área geral
+                    var newOrder = SortedBoards.Count - 1;
+                    if (BoardDropIndicatorPosition >= 0)
+                    {
+                        newOrder = BoardDropIndicatorPosition;
+                    }
+                    
+                    await KanbanService.MoveBoardAsync(Context, boardDragData.CardId, newOrder);
+                    await LoadDataAsync();
+                    
+                    // Marcar como alterado e salvar automaticamente
+                    MarkAsChanged();
+                    await SaveDataAsync();
+                    
+                    await OnDataChanged.InvokeAsync();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro no drop global: {ex.Message}");
+        }
+        
+        BoardDropIndicatorPosition = -1;
+        StateHasChanged();
+    }
+
+    private async Task HandleBoardAreaDragOver(DragEventArgs e, int boardIndex)
+    {
+        e.DataTransfer.DropEffect = "move";
+        
+        // Verificar se é um quadro sendo arrastado
+        var boardData = await e.DataTransfer.GetDataAsync(JSRuntime, DragDropConstants.BoardDataType);
+        if (!string.IsNullOrEmpty(boardData))
+        {
+            ShowBoardDropIndicator = true;
+            BoardDropIndicatorPosition = boardIndex;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleBoardMoved((Board draggedBoard, Board targetBoard) moveData)
+    {
+        try
+        {
+            // Encontrar a posição do quadro de destino
+            var targetIndex = SortedBoards.FindIndex(b => b.Id == moveData.targetBoard.Id);
+            
+            if (targetIndex >= 0)
+            {
+                await KanbanService.MoveBoardAsync(Context, moveData.draggedBoard.Id, targetIndex);
+                await LoadDataAsync();
+                
+                // Marcar como alterado e salvar automaticamente
+                MarkAsChanged();
+                await SaveDataAsync();
+                
+                await OnDataChanged.InvokeAsync();
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao mover quadro: {ex.Message}");
+            SetError($"Erro ao mover quadro: {ex.Message}");
+        }
+    }
+
+    private async Task HandleGlobalDragEnd(DragEventArgs e)
+    {
+        // Reset global drag state
+        IsDragging = false;
+        ShowBoardDropIndicator = false;
+        BoardDropIndicatorPosition = -1;
+        StateHasChanged();
+        
+        // Limpar dados de drag-and-drop
+        await JSRuntime.InvokeVoidAsync("kanbanDragDrop.clearData");
+    }
+
+    #endregion
+
+    #region Keyboard Navigation and Accessibility
+
+    private async Task HandleGlobalKeyDown(KeyboardEventArgs e)
+    {
+        // Global keyboard shortcuts
+        if (e.CtrlKey && e.ShiftKey && e.Key == "N")
+        {
+            await StartAddBoard();
+
+        }
+        else if (e.Key == "Escape" && IsAddingBoard)
+        {
+            CancelAddBoard();
+        }
+        else if (e.Key == "F1")
+        {
+            // Show help/instructions
+            await ShowKeyboardHelp();
+
+        }
+    }
+
+    private async Task HandleAddBoardKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            await StartAddBoard();
+
+        }
+    }
+
+    private async Task HandleAddBoardDialogKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Escape")
+        {
+            CancelAddBoard();
+
+        }
+        else if (e.Key == "Tab")
+        {
+            // Handle tab navigation within dialog
+            await ManageDialogFocus(e);
+        }
+    }
+
+    private async Task ManageDialogFocus(KeyboardEventArgs e)
+    {
+        // Trap focus within the dialog
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.trapFocus", e.ShiftKey);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao gerenciar foco do diálogo: {ex.Message}");
+        }
+    }
+
+    private async Task ShowKeyboardHelp()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.showKeyboardHelp");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao mostrar ajuda do teclado: {ex.Message}");
+        }
+    }
+
+    private Task AnnounceToScreenReader(string message)
+    {
+        // Simplified - just log to console for now
+        Console.WriteLine($"Screen reader: {message}");
+        return Task.CompletedTask;
+    }
+
+    #endregion
+}

@@ -1,0 +1,293 @@
+/* ===== MENU CONTAINER PRINCIPAL ===== */
+/*
+ * AJUSTES PRINCIPAIS DO MENU:
+ * - height: Altura total do menu (atual: 100vh = tela inteira)
+ * - background: Fundo do menu (atual: transparent)
+ * - flex-direction: Direção do layout (atual: column = vertical)
+ *
+ * EXEMPLOS DE AJUSTES:
+ * height: 80vh;         → Menu ocupa 80% da tela
+ * height: 600px;        → Altura fixa de 600px
+ * background: #f0f0f0;  → Fundo cinza claro
+ * background: linear-gradient(45deg, #007bff, #28a745); → Gradient colorido
+ * flex-direction: row;  → Layout horizontal (não recomendado para este caso)
+ */
+
+.menu-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    /* AJUSTE: Altura total do menu */
+    background: transparent !important;
+    /* SIDEBAR TRANSPARENTE */
+    /*
+     * AJUSTES DE BACKGROUND:
+     * background: transparent → Totalmente transparente
+     * background: rgba(255,255,255,0.1) → Fundo branco sutil
+     * background: #f8f9fa → Fundo cinza claro padrão Bootstrap
+     */
+}
+
+/* Seções do Menu - estilos base compartilhados */
+/*
+ * AJUSTES GERAIS DAS SEÇÕES:
+ * - flex: Proporção de cada seção (1 = igual, 2 = dobro do tamanho)
+ * - padding: Espaçamento interno (atual: 1rem = 16px)
+ * - align-items: Alinhamento vertical (center = centralizado)
+ * - justify-content: Alinhamento horizontal (center = centralizado)
+ *
+ * EXEMPLOS DE AJUSTES:
+ * flex: 1;              → Todas seções iguais
+ * flex: 0.8;            → Seção menor
+ * padding: 0.5rem;      → Padding menor
+ * padding: 1.5rem;      → Padding maior
+ * align-items: flex-start → Alinha no topo
+ * align-items: flex-end → Alinha na base
+ */
+
+.menu-section {
+    display: flex;
+    flex: 1;
+    /* AJUSTE: Cada seção ocupa 1 parte igual */
+    align-items: center;
+    /* AJUSTE: Centraliza verticalmente */
+    justify-content: center;
+    /* AJUSTE: Centraliza horizontalmente */
+    padding: 1rem;
+    /* AJUSTE: Espaçamento interno */
+    width: 100%;
+    /*
+     * EXEMPLOS DE PERSONALIZAÇÃO:
+     * flex: 2;              → Seção 2x maior (como a de botões)
+     * align-items: flex-start → Elementos alinhados no topo
+     * justify-content: flex-start → Elementos alinhados à esquerda
+     * padding: 0.8rem;      → Padding menor
+     * padding: 1.2rem;      → Padding maior
+     */
+}
+
+/* ===== SEÇÃO LOGO (TOPO) ===== */
+.menu-logo {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.178);
+    min-height: 100px;
+    justify-content: center;
+}
+
+.menu-logo-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    color: white;
+}
+
+.logo-img {
+    width: 40px;
+    height: 40px;
+}
+
+.logo-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    letter-spacing: 2px;
+}
+
+/* ===== SEÇÃO BOTÕES (MEIO) ===== */
+.menu-buttons {
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    /* Borda escura */
+    flex: 1;
+    /* Ocupa todo o espaço restante */
+}
+
+.menu-buttons-content {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.menu-nav {
+    width: 100%;
+    max-width: 300px;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.nav-link {
+    display: flex;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.nav-link .bi {
+    margin-right: 0.75rem;
+    width: 1.25rem;
+    height: 1.25rem;
+}
+
+/* ===== SEÇÃO PERFIL (FUNDO) ===== */
+.menu-profile {
+    flex: 0 0 50px !important;
+    /* Altura fixa de 50px */
+    min-height: 50px !important;
+    max-height: 50px !important;
+    justify-content: flex-start;
+    /* Alinha à esquerda */
+    align-items: center;
+    overflow: hidden !important;
+}
+
+.menu-profile-content {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    /* Alinha à esquerda */
+    width: 100%;
+    height: 100%;
+    padding-left: 1rem;
+    /* Adiciona espaçamento da borda esquerda */
+}
+
+.profile-container {
+    display: flex;
+    flex-direction: row;
+    /* Avatar e nome lado a lado */
+    align-items: center;
+    gap: 0.75rem;
+    /* Espaço entre avatar e nome */
+    color: white;
+    text-align: left;
+    /* Alinha texto à esquerda */
+}
+
+.profile-avatar {
+    font-size: 1.5rem;
+    /* Tamanho menor para caber em 50px */
+    color: rgba(255, 255, 255, 0.8);
+    flex-shrink: 0;
+    /* Impede que o avatar encolha */
+}
+
+.profile-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.profile-name {
+    font-size: 0.9rem;
+    /* Tamanho menor para caber em 50px */
+    font-weight: 600;
+}
+
+.profile-role {
+    font-size: 0.9rem;
+    opacity: 0.8;
+}
+
+/* ===== DEBUG - BORDAS VISUAIS (REMOVIDO PARA VISUAL LIMPO) ===== */
+/* Estilos de debug removidos para visual profissional */
+/* Para reativar o debug, descomente as linhas abaixo */
+
+/*
+.menu-section {
+    border: 3px solid #ff4444 !important;
+    background-color: rgba(255, 68, 68, 0.1) !important;
+    position: relative;
+}
+
+.menu-section::before {
+    content: attr(data-section);
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: #ff4444;
+    color: white;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+*/
+
+/* ===== RESPONSIVIDADE ===== */
+/*
+ * AJUSTES PARA DISPOSITIVOS MÓVEIS:
+ * - position: fixed → Menu fixo na tela
+ * - left: -100% → Menu fora da tela inicialmente
+ * - transition: Animação suave (atual: 0.3s)
+ * - z-index: Camada do menu (atual: 200 = acima de tudo)
+ *
+ * EXEMPLOS DE AJUSTES:
+ * left: -80%;           → Menu parcialmente visível
+ * transition: left 0.2s ease; → Animação mais rápida
+ * transition: left 0.5s ease; → Animação mais lenta
+ * z-index: 150;         → Camada menor (pode ficar atrás de outros elementos)
+ * z-index: 300;         → Camada maior (sempre no topo)
+ */
+
+@media (max-width: 768px) {
+    .menu-container {
+        position: fixed;
+        top: 0;
+        left: -100%;
+        /* AJUSTE: Menu fora da tela no mobile */
+        width: 100%;
+        height: 100vh;
+        transition: left 0.3s ease;
+        /* AJUSTE: Velocidade da animação */
+        z-index: 200;
+        /* AJUSTE: Camada do menu no mobile */
+        /*
+         * EXEMPLOS DE PERSONALIZAÇÃO MOBILE:
+         * left: -90%;       → Menu parcialmente visível
+         * width: 80%;       → Menu ocupa 80% da tela
+         * transition: left 0.2s ease; → Animação mais rápida
+         * z-index: 150;     → Camada menor
+         */
+    }
+
+    .menu-container.open {
+        left: 0;
+        /* AJUSTE: Menu totalmente visível quando aberto */
+    }
+
+    .menu-section {
+        height: 33.33vh;
+        /* AJUSTE: Cada seção ocupa 1/3 da altura da tela */
+        border-right: none;
+        border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+        /* AJUSTE: Borda escura no mobile */
+        /*
+         * EXEMPLOS DE AJUSTES MOBILE:
+         * height: 25vh;     → Seções menores
+         * height: 40vh;     → Seções maiores
+         * border-bottom: 1px solid rgba(0,0,0,0.05); → Borda mais sutil
+         */
+    }
+
+    .menu-buttons {
+        border-bottom: none;
+        /* AJUSTE: Remove borda inferior da seção de botões */
+    }
+}

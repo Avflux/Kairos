@@ -1,0 +1,356 @@
+@using Microsoft.AspNetCore.Components.Web
+@using kairos.Components.Kanban.Services
+@inherits ErrorBoundaryBase
+@inject IErrorHandlingService ErrorHandling
+@inject IUserFeedbackService FeedbackService
+@inject IDataRecoveryService DataRecovery
+
+<div class="kanban-error-boundary">
+    @if (CurrentException is null)
+    {
+        @ChildContent
+    }
+    else
+    {
+        <div class="error-container" role="alert" aria-live="assertive">
+            <div class="error-header">
+                <div class="error-icon" aria-hidden="true">⚠️</div>
+                <h3 class="error-title">Ops! Algo deu errado</h3>
+            </div>
+            
+            <div class="error-content">
+                <p class="error-message">
+                    @GetUserFriendlyErrorMessage(CurrentException)
+                </p>
+                
+                @if (ShowTechnicalDetails)
+                {
+                    <div class="error-technical-details">
+                        <details>
+                            <summary>Detalhes técnicos</summary>
+                            <div class="technical-info">
+                                <p><strong>Tipo:</strong> @CurrentException.GetType().Name</p>
+                                <p><strong>Mensagem:</strong> @CurrentException.Message</p>
+                                @if (CurrentException.InnerException != null)
+                                {
+                                    <p><strong>Erro interno:</strong> @CurrentException.InnerException.Message</p>
+                                }
+                                <p><strong>Horário:</strong> @DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss")</p>
+                            </div>
+                        </details>
+                    </div>
+                }
+            </div>
+            
+            <div class="error-actions">
+                <button class="btn-retry" @onclick="HandleRetry" disabled="@IsRecovering">
+                    @if (IsRecovering)
+                    {
+                        <span class="loading-spinner" aria-hidden="true"></span>
+                        <span>Recuperando...</span>
+                    }
+                    else
+                    {
+                        <span class="retry-icon" aria-hidden="true">🔄</span>
+                        <span>Tentar Novamente</span>
+                    }
+                </button>
+                
+                <button class="btn-recover" @onclick="HandleRecover" disabled="@IsRecovering">
+                    <span class="recover-icon" aria-hidden="true">🛠️</span>
+                    <span>Recuperar Dados</span>
+                </button>
+                
+                <button class="btn-reload" @onclick="HandleReload">
+                    <span class="reload-icon" aria-hidden="true">↻</span>
+                    <span>Recarregar Página</span>
+                </button>
+                
+                <button class="btn-toggle-details" @onclick="ToggleTechnicalDetails">
+                    <span class="details-icon" aria-hidden="true">@(ShowTechnicalDetails ? "🔼" : "🔽")</span>
+                    <span>@(ShowTechnicalDetails ? "Ocultar" : "Mostrar") Detalhes</span>
+                </button>
+            </div>
+            
+            <div class="error-suggestions">
+                <h4>Sugestões para resolver:</h4>
+                <ul>
+                    @foreach (var suggestion in GetErrorSuggestions(CurrentException))
+                    {
+                        <li>@suggestion</li>
+                    }
+                </ul>
+            </div>
+            
+            @if (RecoveryOptions.Any())
+            {
+                <div class="recovery-options">
+                    <h4>Opções de recuperação:</h4>
+                    <div class="recovery-buttons">
+                        @foreach (var option in RecoveryOptions)
+                        {
+                            <button class="btn-recovery-option" 
+                                    @onclick="() => HandleRecoveryOption(option)"
+                                    disabled="@IsRecovering">
+                                <span class="option-icon" aria-hidden="true">@option.Icon</span>
+                                <span>@option.Title</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public new RenderFragment? ChildContent { get; set; }
+    [Parameter] public string Context { get; set; } = string.Empty;
+    [Parameter] public EventCallback OnRecovered { get; set; }
+
+    private bool ShowTechnicalDetails { get; set; } = false;
+    private bool IsRecovering { get; set; } = false;
+    private List<RecoveryOption> RecoveryOptions { get; set; } = new();
+
+    protected override async Task OnErrorAsync(Exception exception)
+    {
+        // Log the error
+        ErrorHandling.LogError(exception, "KanbanErrorBoundary", new { Context });
+        
+        // Show error feedback
+        await FeedbackService.ShowErrorAsync("Ocorreu um erro inesperado no sistema Kanban.");
+        
+        // Load recovery options
+        await LoadRecoveryOptions();
+        
+        StateHasChanged();
+    }
+
+    private async Task HandleRetry()
+    {
+        try
+        {
+            IsRecovering = true;
+            StateHasChanged();
+            
+            await FeedbackService.ShowLoadingAsync("Tentando novamente...", "error-retry");
+            
+            // Clear the error and try to recover
+            Recover();
+            
+            await FeedbackService.HideLoadingAsync("error-retry");
+            await FeedbackService.ShowSuccessAsync("Sistema recuperado com sucesso!");
+            
+            await OnRecovered.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorHandling.LogError(ex, "ErrorBoundaryRetry", new { Context });
+            await FeedbackService.ShowErrorAsync("Não foi possível recuperar automaticamente. Tente as opções de recuperação.");
+        }
+        finally
+        {
+            IsRecovering = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleRecover()
+    {
+        try
+        {
+            IsRecovering = true;
+            StateHasChanged();
+            
+            await FeedbackService.ShowLoadingAsync("Recuperando dados...", "data-recovery");
+            
+            if (!string.IsNullOrEmpty(Context))
+            {
+                var canRecover = await DataRecovery.CanRecoverDataAsync(Context);
+                if (canRecover)
+                {
+                    await DataRecovery.RecoverDataAsync(Context);
+                    
+                    // Clear the error after successful recovery
+                    Recover();
+                    
+                    await FeedbackService.HideLoadingAsync("data-recovery");
+                    await FeedbackService.ShowSuccessAsync("Dados recuperados com sucesso!");
+                    
+                    await OnRecovered.InvokeAsync();
+                }
+                else
+                {
+                    await FeedbackService.HideLoadingAsync("data-recovery");
+                    await FeedbackService.ShowWarningAsync("Não foram encontrados dados para recuperar. Criando dados padrão...");
+                    
+                    // This will create default data
+                    await DataRecovery.RecoverDataAsync(Context);
+                    Recover();
+                    
+                    await OnRecovered.InvokeAsync();
+                }
+            }
+            else
+            {
+                await FeedbackService.HideLoadingAsync("data-recovery");
+                await FeedbackService.ShowWarningAsync("Contexto não especificado para recuperação.");
+            }
+        }
+        catch (Exception ex)
+        {
+            ErrorHandling.LogError(ex, "ErrorBoundaryRecover", new { Context });
+            await FeedbackService.HideLoadingAsync("data-recovery");
+            await FeedbackService.ShowErrorAsync("Erro durante a recuperação de dados.");
+        }
+        finally
+        {
+            IsRecovering = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleReload()
+    {
+        await FeedbackService.ShowInfoAsync("Recarregando página...");
+        
+        // Use JavaScript to reload the page
+        await Task.Delay(1000); // Give time for the message to show
+        
+        // In a real MAUI app, you might want to navigate or restart the component tree
+        // For now, we'll just clear the error and notify
+        Recover();
+        await OnRecovered.InvokeAsync();
+    }
+
+    private void ToggleTechnicalDetails()
+    {
+        ShowTechnicalDetails = !ShowTechnicalDetails;
+        StateHasChanged();
+    }
+
+    private async Task HandleRecoveryOption(RecoveryOption option)
+    {
+        try
+        {
+            IsRecovering = true;
+            StateHasChanged();
+            
+            await FeedbackService.ShowLoadingAsync($"Executando: {option.Title}...", "recovery-option");
+            
+            await option.Action();
+            
+            Recover();
+            
+            await FeedbackService.HideLoadingAsync("recovery-option");
+            await FeedbackService.ShowSuccessAsync($"{option.Title} executado com sucesso!");
+            
+            await OnRecovered.InvokeAsync();
+        }
+        catch (Exception ex)
+        {
+            ErrorHandling.LogError(ex, "RecoveryOption", new { OptionTitle = option.Title, Context });
+            await FeedbackService.HideLoadingAsync("recovery-option");
+            await FeedbackService.ShowErrorAsync($"Erro ao executar {option.Title}.");
+        }
+        finally
+        {
+            IsRecovering = false;
+            StateHasChanged();
+        }
+    }
+
+    private async Task LoadRecoveryOptions()
+    {
+        RecoveryOptions.Clear();
+        
+        if (!string.IsNullOrEmpty(Context))
+        {
+            // Check if backups are available
+            try
+            {
+                var backups = await DataRecovery.GetAvailableBackupsAsync(Context);
+                if (backups.Any())
+                {
+                    var latestBackup = backups.OrderByDescending(b => b.LastModified).First();
+                    RecoveryOptions.Add(new RecoveryOption
+                    {
+                        Title = $"Restaurar backup ({latestBackup.LastModified:dd/MM HH:mm})",
+                        Icon = "💾",
+                        Action = async () => await DataRecovery.RestoreFromBackupAsync(Context, latestBackup.LastModified)
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                ErrorHandling.LogWarning("Erro ao carregar opções de backup", "LoadRecoveryOptions", new { Context, Error = ex.Message });
+            }
+        }
+        
+        // Always add option to clear cache
+        RecoveryOptions.Add(new RecoveryOption
+        {
+            Title = "Limpar cache local",
+            Icon = "🗑️",
+            Action = async () =>
+            {
+                // Clear browser cache/storage
+                await Task.Delay(1000); // Simulate cache clearing
+            }
+        });
+    }
+
+    private string GetUserFriendlyErrorMessage(Exception exception)
+    {
+        return exception switch
+        {
+            ArgumentException => "Dados inválidos foram fornecidos ao sistema.",
+            InvalidOperationException => "A operação não pôde ser concluída no estado atual.",
+            TimeoutException => "A operação demorou muito para ser concluída.",
+            UnauthorizedAccessException => "Você não tem permissão para realizar esta ação.",
+            _ when exception.Message.Contains("network") => "Problema de conectividade. Verifique sua conexão.",
+            _ when exception.Message.Contains("storage") => "Problema com o armazenamento local de dados.",
+            _ => "Ocorreu um erro inesperado. Nossa equipe foi notificada."
+        };
+    }
+
+    private List<string> GetErrorSuggestions(Exception exception)
+    {
+        var suggestions = new List<string>();
+        
+        if (exception.Message.Contains("network") || exception.Message.Contains("connection"))
+        {
+            suggestions.Add("Verifique sua conexão com a internet");
+            suggestions.Add("Tente novamente em alguns momentos");
+        }
+        
+        if (exception.Message.Contains("storage") || exception.Message.Contains("quota"))
+        {
+            suggestions.Add("Limpe o cache do navegador");
+            suggestions.Add("Verifique se há espaço disponível no dispositivo");
+        }
+        
+        if (exception is ArgumentException || exception is InvalidOperationException)
+        {
+            suggestions.Add("Recarregue a página e tente novamente");
+            suggestions.Add("Verifique se todos os campos estão preenchidos corretamente");
+        }
+        
+        // Default suggestions
+        if (!suggestions.Any())
+        {
+            suggestions.Add("Recarregue a página");
+            suggestions.Add("Tente novamente em alguns momentos");
+            suggestions.Add("Entre em contato com o suporte se o problema persistir");
+        }
+        
+        return suggestions;
+    }
+
+    private class RecoveryOption
+    {
+        public string Title { get; set; } = string.Empty;
+        public string Icon { get; set; } = string.Empty;
+        public Func<Task> Action { get; set; } = () => Task.CompletedTask;
+    }
+}

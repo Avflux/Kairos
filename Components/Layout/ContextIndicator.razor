@@ -1,0 +1,33 @@
+@if (!string.IsNullOrEmpty(Context))
+{
+    <div class="context-indicator @Context.ToLower()">
+        <span class="context-icon">@GetContextIcon(Context)</span>
+        <span class="context-text">@GetContextDisplayName(Context)</span>
+    </div>
+}
+
+@code {
+    [Parameter] public string Context { get; set; } = string.Empty;
+
+    private string GetContextIcon(string context)
+    {
+        return context.ToLower() switch
+        {
+            "civil" => "🏗️",
+            "eletromecanica" => "⚡",
+            "spcs" => "🔬",
+            _ => "📋"
+        };
+    }
+
+    private string GetContextDisplayName(string context)
+    {
+        return context.ToLower() switch
+        {
+            "civil" => "Civil",
+            "eletromecanica" => "Eletromecânica",
+            "spcs" => "SPCS",
+            _ => context
+        };
+    }
+}

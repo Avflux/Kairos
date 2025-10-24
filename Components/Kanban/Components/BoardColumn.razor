@@ -1,0 +1,763 @@
+@using kairos.Components.Kanban.Models
+@using kairos.Components.Kanban.Services
+@using kairos.Components.Kanban.Extensions
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using System.Text.Json
+@namespace kairos.Components.Kanban.Components
+
+<div class="board-column @(IsDragOver ? "drag-over" : "") @(IsBoardDragging ? "board-dragging" : "") @(IsBoardDragOver ? "board-drag-over" : "")" 
+     draggable="@(!IsEditingTitle && !IsAddingCard).ToString().ToLower()"
+     @ondragstart="HandleBoardDragStart"
+     @ondragend="HandleBoardDragEnd"
+     @ondragover="HandleDragOver"
+     @ondragover:preventDefault="true"
+     @ondrop="HandleDrop"
+     @ondrop:preventDefault="true"
+     @ondragenter="HandleDragEnter"
+     @ondragleave="HandleDragLeave"
+     @onkeydown="HandleBoardKeyDown"
+     tabindex="0"
+     role="region"
+     aria-label="Quadro @Board.Title, posição @(BoardIndex + 1) de @TotalBoards"
+     aria-describedby="board-@Board.Id-description">
+    
+    <!-- Screen reader description -->
+    <div id="board-@Board.Id-description" class="sr-only">
+        Quadro com @Board.Cards.Count cartão(s). 
+        Use setas para navegar, Enter para editar título, 
+        Ctrl+Shift+C para novo cartão, Delete para remover quadro.
+    </div>
+
+    <div class="board-header">
+        <div class="board-title-area">
+            @if (IsEditingTitle)
+            {
+                <label for="board-title-input-@Board.Id" class="sr-only">Título do quadro</label>
+                <input type="text" 
+                       id="board-title-input-@Board.Id"
+                       class="board-title-input" 
+                       @bind="EditTitle" 
+                       @onkeypress="HandleTitleKeyPress"
+                       @onblur="SaveTitle"
+                       @ref="titleInput"
+                       aria-label="Editar título do quadro"
+                       aria-describedby="board-title-help-@Board.Id"
+                       maxlength="100" />
+                <div id="board-title-help-@Board.Id" class="sr-only">
+                    Digite o novo título e pressione Enter para salvar ou Escape para cancelar
+                </div>
+            }
+            else
+            {
+                <div class="drag-handle" 
+                     title="Arrastar para reordenar quadro"
+                     aria-label="Alça para arrastar quadro @Board.Title"
+                     role="button"
+                     tabindex="0"
+                     @onkeydown="HandleDragHandleKeyDown">⋮⋮</div>
+                <h3 class="board-title" 
+                   @onclick="StartEditTitle" 
+                   @onkeydown="HandleTitleKeyDown"
+                   tabindex="0"
+                   role="button"
+                   aria-label="Título do quadro: @Board.Title. Pressione Enter para editar ou Delete para remover">@Board.Title</h3>
+            }
+        </div>
+        
+        <div class="board-actions" role="group" aria-label="Ações do quadro">
+            <button class="btn-add-card" 
+                    @onclick="AddNewCard" 
+                    @onclick:stopPropagation="true" 
+                    @onkeydown="HandleAddCardKeyDown"
+                    title="Adicionar cartão (Ctrl+Shift+C)"
+                    aria-label="Adicionar novo cartão ao quadro @Board.Title. Atalho: Ctrl+Shift+C"
+                    aria-describedby="add-card-help-@Board.Id">
+                <span class="icon" aria-hidden="true">+</span>
+                <span class="sr-only">Adicionar cartão</span>
+            </button>
+            <button class="btn-delete-board" 
+                    @onclick="ConfirmDeleteBoard" 
+                    @onclick:stopPropagation="true" 
+                    @onkeydown="HandleDeleteBoardKeyDown"
+                    title="Remover quadro (Delete)"
+                    aria-label="Remover quadro @Board.Title. Atalho: Delete"
+                    aria-describedby="delete-board-help-@Board.Id">
+                <span class="icon" aria-hidden="true">×</span>
+                <span class="sr-only">Remover quadro</span>
+            </button>
+            <div id="add-card-help-@Board.Id" class="sr-only">
+                Adiciona um novo cartão a este quadro
+            </div>
+            <div id="delete-board-help-@Board.Id" class="sr-only">
+                Remove este quadro e todos os seus cartões permanentemente
+            </div>
+        </div>
+    </div>
+
+    <div class="board-content">
+        <div class="cards-container" 
+             @ondragover="HandleContainerDragOver"
+             @ondragover:preventDefault="true"
+             @ondrop="HandleContainerDrop"
+             @ondrop:preventDefault="true"
+             role="list"
+             aria-label="Cartões do quadro @Board.Title"
+             aria-live="polite"
+             aria-atomic="false">
+            
+            @if (SortedCards.Count == 0)
+            {
+                <div class="empty-board-drop-zone @(IsDragOver ? "active" : "")"
+                     role="status"
+                     aria-label="Quadro vazio - zona de soltar cartões">
+                    <span class="drop-zone-text">Arraste cartões aqui ou use o botão + para adicionar</span>
+                </div>
+            }
+            else
+            {
+                @for (int i = 0; i < SortedCards.Count; i++)
+                {
+                    var card = SortedCards[i];
+                    var cardIndex = i;
+                    
+                    @if (ShowDropIndicator && DropIndicatorPosition == cardIndex)
+                    {
+                        <div class="drop-indicator"></div>
+                    }
+                    
+                    <div class="card-wrapper" 
+                         @ondragover="@((e) => HandleCardAreaDragOver(e, cardIndex))"
+                         @ondragover:preventDefault="true"
+                         role="listitem">
+                        <TaskCard Card="@card" 
+                                 CardIndex="@cardIndex"
+                                 TotalCards="@SortedCards.Count"
+                                 BoardTitle="@Board.Title"
+                                 OnCardUpdated="HandleCardUpdated"
+                                 OnCardDeleted="HandleCardDeleted"
+                                 OnDragStart="HandleCardDragStart"
+                                 OnDragEnd="HandleCardDragEnd" />
+                    </div>
+                }
+                
+                @if (ShowDropIndicator && DropIndicatorPosition == SortedCards.Count)
+                {
+                    <div class="drop-indicator"></div>
+                }
+            }
+        </div>
+        
+        @if (IsAddingCard)
+        {
+            <div class="add-card-form">
+                <input type="text" 
+                       class="new-card-input" 
+                       @bind="NewCardTitle" 
+                       @onkeypress="HandleNewCardKeyPress"
+                       @onblur="CancelAddCard"
+                       @ref="newCardInput"
+                       placeholder="Digite o título do cartão..." />
+                <div class="add-card-actions">
+                    <button class="btn-save" @onclick="SaveNewCard">Adicionar</button>
+                    <button class="btn-cancel" @onclick="CancelAddCard">Cancelar</button>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="card-count">
+        <small class="text-muted">@Board.Cards.Count cartão(s)</small>
+    </div>
+</div>
+
+@if (ShowDeleteConfirmation)
+{
+    <div class="delete-confirmation-overlay" @onclick="CancelDeleteBoard">
+        <div class="delete-confirmation-dialog" @onclick:stopPropagation="true">
+            <h4>Confirmar Exclusão</h4>
+            <p>Tem certeza que deseja excluir o quadro "<strong>@Board.Title</strong>"?</p>
+            <p class="warning">Esta ação não pode ser desfeita e todos os cartões serão perdidos.</p>
+            <div class="confirmation-actions">
+                <button class="btn-confirm-delete" @onclick="DeleteBoard">Excluir</button>
+                <button class="btn-cancel" @onclick="CancelDeleteBoard">Cancelar</button>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    [Parameter] public Board Board { get; set; } = new();
+    [Parameter] public string Context { get; set; } = string.Empty;
+    [Parameter] public int BoardIndex { get; set; } = 0;
+    [Parameter] public int TotalBoards { get; set; } = 0;
+    [Parameter] public EventCallback<Board> OnBoardUpdated { get; set; }
+    [Parameter] public EventCallback<Board> OnBoardDeleted { get; set; }
+    [Parameter] public EventCallback<Card> OnCardMoved { get; set; }
+    [Parameter] public EventCallback<(Board draggedBoard, Board targetBoard)> OnBoardMoved { get; set; }
+    [Parameter] public bool IsGlobalDragging { get; set; } = false;
+    
+    [Inject] private IKanbanService KanbanService { get; set; } = default!;
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+
+    private bool IsEditingTitle { get; set; } = false;
+    private bool IsAddingCard { get; set; } = false;
+    private bool IsDragOver { get; set; } = false;
+    private bool IsBoardDragging { get; set; } = false;
+    private bool IsBoardDragOver { get; set; } = false;
+    private bool ShowDeleteConfirmation { get; set; } = false;
+    private bool ShowDropIndicator { get; set; } = false;
+    
+    private string EditTitle { get; set; } = string.Empty;
+    private string NewCardTitle { get; set; } = string.Empty;
+    private int DropIndicatorPosition { get; set; } = -1;
+    
+    private ElementReference titleInput;
+    private ElementReference newCardInput;
+
+    private List<Card> SortedCards => Board.Cards.OrderBy(c => c.Order).ToList();
+
+    protected override void OnParametersSet()
+    {
+        EditTitle = Board.Title;
+    }
+
+    #region Title Editing
+    
+    private async Task StartEditTitle()
+    {
+        IsEditingTitle = true;
+        EditTitle = Board.Title;
+        StateHasChanged();
+        
+        await Task.Delay(10);
+        await titleInput.FocusAsync();
+    }
+
+    private async Task HandleTitleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveTitle();
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelEditTitle();
+        }
+    }
+
+    private async Task SaveTitle()
+    {
+        if (string.IsNullOrWhiteSpace(EditTitle))
+        {
+            CancelEditTitle();
+            return;
+        }
+
+        var trimmedTitle = EditTitle.Trim();
+        if (trimmedTitle != Board.Title)
+        {
+            try
+            {
+                await KanbanService.UpdateBoardTitleAsync(Context, Board.Id, trimmedTitle);
+                Board.Title = trimmedTitle;
+                Board.UpdateLastModified();
+                await OnBoardUpdated.InvokeAsync(Board);
+            }
+            catch (Exception ex)
+            {
+                // Log error and revert
+                Console.WriteLine($"Erro ao atualizar título do quadro: {ex.Message}");
+                EditTitle = Board.Title;
+            }
+        }
+
+        IsEditingTitle = false;
+        StateHasChanged();
+    }
+
+    private void CancelEditTitle()
+    {
+        IsEditingTitle = false;
+        EditTitle = Board.Title;
+        StateHasChanged();
+    }
+
+    private async Task HandleTitleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            await StartEditTitle();
+
+        }
+        else if (e.Key == "Delete")
+        {
+            ConfirmDeleteBoard();
+
+        }
+    }
+
+    #endregion
+
+    #region Card Management
+
+    private async Task AddNewCard()
+    {
+        IsAddingCard = true;
+        NewCardTitle = string.Empty;
+        StateHasChanged();
+        
+        await Task.Delay(10);
+        await newCardInput.FocusAsync();
+    }
+
+    private async Task HandleNewCardKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveNewCard();
+        }
+        else if (e.Key == "Escape")
+        {
+            CancelAddCard();
+        }
+    }
+
+    private async Task SaveNewCard()
+    {
+        if (string.IsNullOrWhiteSpace(NewCardTitle))
+        {
+            CancelAddCard();
+            return;
+        }
+
+        try
+        {
+            var newCard = await KanbanService.CreateCardAsync(Context, Board.Id, NewCardTitle.Trim());
+            Board.Cards.Add(newCard);
+            Board.UpdateLastModified();
+            await OnBoardUpdated.InvokeAsync(Board);
+            
+            NewCardTitle = string.Empty;
+            IsAddingCard = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao criar cartão: {ex.Message}");
+            CancelAddCard();
+        }
+    }
+
+    private void CancelAddCard()
+    {
+        IsAddingCard = false;
+        NewCardTitle = string.Empty;
+        StateHasChanged();
+    }
+
+    private async Task HandleCardUpdated(Card updatedCard)
+    {
+        var existingCard = Board.Cards.FirstOrDefault(c => c.Id == updatedCard.Id);
+        if (existingCard != null)
+        {
+            existingCard.Title = updatedCard.Title;
+            existingCard.Description = updatedCard.Description;
+            existingCard.UpdateLastModified();
+            Board.UpdateLastModified();
+            await OnBoardUpdated.InvokeAsync(Board);
+        }
+    }
+
+    private async Task HandleCardDeleted(Card deletedCard)
+    {
+        try
+        {
+            await KanbanService.DeleteCardAsync(Context, deletedCard.Id);
+            Board.Cards.RemoveAll(c => c.Id == deletedCard.Id);
+            Board.UpdateLastModified();
+            await OnBoardUpdated.InvokeAsync(Board);
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao deletar cartão: {ex.Message}");
+        }
+    }
+
+    #endregion
+
+    #region Board Management
+
+    private void ConfirmDeleteBoard()
+    {
+        ShowDeleteConfirmation = true;
+        StateHasChanged();
+    }
+
+    private async Task DeleteBoard()
+    {
+        try
+        {
+            await KanbanService.DeleteBoardAsync(Context, Board.Id);
+            await OnBoardDeleted.InvokeAsync(Board);
+            ShowDeleteConfirmation = false;
+            StateHasChanged();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao deletar quadro: {ex.Message}");
+            ShowDeleteConfirmation = false;
+            StateHasChanged();
+        }
+    }
+
+    private void CancelDeleteBoard()
+    {
+        ShowDeleteConfirmation = false;
+        StateHasChanged();
+    }
+
+    #endregion
+
+    #region Board Drag and Drop
+
+    private async Task HandleBoardDragStart(DragEventArgs e)
+    {
+        if (IsEditingTitle || IsAddingCard) return;
+        
+        IsBoardDragging = true;
+        StateHasChanged();
+        
+        // Create board drag data
+        var boardDragData = new DragDropData
+        {
+            CardId = Board.Id, // Reusing CardId field for BoardId
+            SourceBoardId = Board.Id,
+            SourceOrder = Board.Order,
+            DragType = "board"
+        };
+        
+        e.DataTransfer.SetData(JSRuntime, DragDropConstants.TextDataType, Board.Id);
+        e.DataTransfer.SetData(JSRuntime, DragDropConstants.BoardDataType, JsonSerializer.Serialize(boardDragData));
+        
+        e.DataTransfer.EffectAllowed = "move";
+    }
+
+    private async Task HandleBoardDragEnd(DragEventArgs e)
+    {
+        IsBoardDragging = false;
+        StateHasChanged();
+    }
+
+    #endregion
+
+    #region Card Drag and Drop
+
+    private async Task HandleDragOver(DragEventArgs e)
+    {
+        e.DataTransfer.DropEffect = "move";
+    }
+
+    private async Task HandleContainerDragOver(DragEventArgs e)
+    {
+        e.DataTransfer.DropEffect = "move";
+        
+        // Calculate drop position based on mouse position
+        if (SortedCards.Count > 0)
+        {
+            // For now, show indicator at the end when dragging over container
+            ShowDropIndicator = true;
+            DropIndicatorPosition = SortedCards.Count;
+            StateHasChanged();
+        }
+    }
+
+    private async Task HandleCardAreaDragOver(DragEventArgs e, int cardIndex)
+    {
+        e.DataTransfer.DropEffect = "move";
+        
+        // Show drop indicator at the appropriate position
+        ShowDropIndicator = true;
+        DropIndicatorPosition = cardIndex;
+        StateHasChanged();
+    }
+
+    private async Task HandleContainerDrop(DragEventArgs e)
+    {
+        await HandleDrop(e);
+    }
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+        IsDragOver = false;
+        IsBoardDragOver = false;
+        ShowDropIndicator = false;
+        
+        try
+        {
+            // Check for board drop first
+            var boardData = await e.DataTransfer.GetDataAsync(JSRuntime, DragDropConstants.BoardDataType);
+            if (!string.IsNullOrEmpty(boardData))
+            {
+                var boardDragData = JsonSerializer.Deserialize<DragDropData>(boardData);
+                if (boardDragData != null && boardDragData.DragType == "board" && boardDragData.CardId != Board.Id)
+                {
+                    // Handle board reordering - pass both the dragged board and target board to parent
+                    var draggedBoard = new Board 
+                    { 
+                        Id = boardDragData.CardId, 
+                        Order = boardDragData.SourceOrder 
+                    };
+                    await OnBoardMoved.InvokeAsync((draggedBoard, Board));
+                    return;
+                }
+            }
+            
+            // Handle card drop
+            var cardData = await e.DataTransfer.GetDataAsync(JSRuntime, DragDropConstants.CardDataType);
+            if (!string.IsNullOrEmpty(cardData))
+            {
+                var dragDropData = JsonSerializer.Deserialize<DragDropData>(cardData);
+                if (dragDropData != null && dragDropData.CardId != null)
+                {
+                    // Calculate new order based on drop position
+                    int newOrder;
+                    if (DropIndicatorPosition >= 0 && DropIndicatorPosition < SortedCards.Count)
+                    {
+                        // Insert at specific position
+                        newOrder = CalculateOrderForPosition(DropIndicatorPosition);
+                    }
+                    else
+                    {
+                        // Add to end
+                        newOrder = Board.Cards.Count > 0 ? Board.Cards.Max(c => c.Order) + 1 : 0;
+                    }
+                    
+                    await KanbanService.MoveCardAsync(Context, dragDropData.CardId, Board.Id, newOrder);
+                    await OnCardMoved.InvokeAsync(new Card { Id = dragDropData.CardId });
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro no drop: {ex.Message}");
+        }
+        
+        DropIndicatorPosition = -1;
+        StateHasChanged();
+    }
+
+    private int CalculateOrderForPosition(int position)
+    {
+        if (position == 0)
+        {
+            // Insert at beginning
+            return SortedCards.Count > 0 ? SortedCards[0].Order - 1 : 0;
+        }
+        else if (position >= SortedCards.Count)
+        {
+            // Insert at end
+            return SortedCards.Count > 0 ? SortedCards[^1].Order + 1 : 0;
+        }
+        else
+        {
+            // Insert between cards
+            var prevOrder = SortedCards[position - 1].Order;
+            var nextOrder = SortedCards[position].Order;
+            
+            // If there's space between orders, use the middle
+            if (nextOrder - prevOrder > 1)
+            {
+                return prevOrder + 1;
+            }
+            else
+            {
+                // Need to reorder cards to make space
+                return prevOrder + 1;
+            }
+        }
+    }
+
+    private async Task HandleDragEnter(DragEventArgs e)
+    {
+        // Check if this is a board being dragged
+        var boardData = await e.DataTransfer.GetDataAsync(JSRuntime, DragDropConstants.BoardDataType);
+        if (!string.IsNullOrEmpty(boardData))
+        {
+            var boardDragData = JsonSerializer.Deserialize<DragDropData>(boardData);
+            if (boardDragData != null && boardDragData.DragType == "board" && boardDragData.CardId != Board.Id)
+            {
+                IsBoardDragOver = true;
+            }
+        }
+        else
+        {
+            IsDragOver = true;
+        }
+        StateHasChanged();
+    }
+
+    private async Task HandleDragLeave(DragEventArgs e)
+    {
+        // Reset all drag over states
+        IsDragOver = false;
+        IsBoardDragOver = false;
+        ShowDropIndicator = false;
+        StateHasChanged();
+    }
+
+    private async Task HandleCardDragStart(DragEventArgs e)
+    {
+        // Card drag start is handled by TaskCard component
+        // Reset any existing drop indicators
+        ShowDropIndicator = false;
+        DropIndicatorPosition = -1;
+    }
+
+    private async Task HandleCardDragEnd(DragEventArgs e)
+    {
+        IsDragOver = false;
+        IsBoardDragOver = false;
+        ShowDropIndicator = false;
+        DropIndicatorPosition = -1;
+        StateHasChanged();
+    }
+
+    #endregion
+
+    #region Keyboard Navigation and Accessibility
+
+    private async Task HandleBoardKeyDown(KeyboardEventArgs e)
+    {
+        if (e.CtrlKey && e.ShiftKey && e.Key == "C")
+        {
+            await AddNewCard();
+
+        }
+        else if (e.Key == "Delete" && !IsEditingTitle && !IsAddingCard)
+        {
+            ConfirmDeleteBoard();
+
+        }
+        else if (e.Key == "Enter" && !IsEditingTitle && !IsAddingCard)
+        {
+            await StartEditTitle();
+
+        }
+        else if (e.Key == "ArrowLeft" || e.Key == "ArrowRight")
+        {
+            await NavigateToAdjacentBoard(e.Key == "ArrowRight");
+
+        }
+        else if (e.Key == "ArrowDown" && SortedCards.Count > 0)
+        {
+            await FocusFirstCard();
+
+        }
+    }
+
+
+
+    private async Task HandleDragHandleKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            await StartBoardMove();
+
+        }
+        else if (e.Key == "ArrowLeft" || e.Key == "ArrowRight")
+        {
+            await MoveBoardWithKeyboard(e.Key == "ArrowRight");
+
+        }
+    }
+
+    private async Task HandleAddCardKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            await AddNewCard();
+
+        }
+    }
+
+    private async Task HandleDeleteBoardKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            ConfirmDeleteBoard();
+
+        }
+    }
+
+    private async Task NavigateToAdjacentBoard(bool moveRight)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.navigateToBoard", 
+                BoardIndex, TotalBoards, moveRight);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao navegar para quadro adjacente: {ex.Message}");
+        }
+    }
+
+    private async Task FocusFirstCard()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.focusFirstCard", Board.Id);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao focar primeiro cartão: {ex.Message}");
+        }
+    }
+
+    private async Task StartBoardMove()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.startBoardMove", Board.Id);
+            await AnnounceToScreenReader($"Modo de movimentação ativado para quadro {Board.Title}. Use setas esquerda/direita para mover, Enter para confirmar, Escape para cancelar.");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao iniciar movimentação do quadro: {ex.Message}");
+        }
+    }
+
+    private async Task MoveBoardWithKeyboard(bool moveRight)
+    {
+        try
+        {
+            // This would trigger the board reordering logic
+            var targetIndex = moveRight ? BoardIndex + 1 : BoardIndex - 1;
+            if (targetIndex >= 0 && targetIndex < TotalBoards)
+            {
+                await AnnounceToScreenReader($"Movendo quadro {Board.Title} para posição {targetIndex + 1}");
+                // Implementation would depend on parent component coordination
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao mover quadro com teclado: {ex.Message}");
+        }
+    }
+
+    private async Task AnnounceToScreenReader(string message)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.announce", message);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao anunciar para leitor de tela: {ex.Message}");
+        }
+    }
+
+    #endregion
+}

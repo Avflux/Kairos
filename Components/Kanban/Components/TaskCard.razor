@@ -1,0 +1,430 @@
+@using kairos.Components.Kanban.Models
+@using kairos.Components.Kanban.Extensions
+@using Microsoft.AspNetCore.Components.Web
+@using Microsoft.JSInterop
+@using System.Text.Json
+@namespace kairos.Components.Kanban.Components
+
+<div class="task-card @(IsEditing ? "editing" : "") @(IsDragging ? "dragging" : "") @(IsDragOver ? "drag-over" : "")" 
+     draggable="@(!IsEditing).ToString().ToLower()"
+     @onclick="HandleCardClick" 
+     @onclick:stopPropagation="true"
+     @ondragstart="HandleDragStart"
+     @ondragend="HandleDragEnd"
+     @ondragover="HandleDragOver"
+     @ondragover:preventDefault="true"
+     @ondrop="HandleDrop"
+     @ondrop:preventDefault="true"
+     @ondragenter="HandleDragEnter"
+     @ondragleave="HandleDragLeave"
+     @onkeydown="HandleCardKeyDown"
+     tabindex="0"
+     role="button"
+     aria-label="Cartão @Card.Title no quadro @BoardTitle, posição @(CardIndex + 1) de @TotalCards"
+     aria-describedby="card-@Card.Id-description"
+     aria-expanded="@IsEditing.ToString().ToLower()">
+    <!-- Screen reader description -->
+    <div id="card-@Card.Id-description" class="sr-only">
+        @if (IsEditing)
+        {
+            <span>Editando cartão. Use Tab para navegar entre campos, Enter para salvar, Escape para cancelar.</span>
+        }
+        else
+        {
+            <span>Cartão criado em @Card.CreatedAt.ToString("dd/MM/yyyy"). Pressione Enter para editar, Delete para remover, setas para navegar.</span>
+        }
+    </div>
+
+    @if (IsEditing)
+    {
+        <div class="task-card-edit" role="form" aria-labelledby="card-edit-title-@Card.Id">
+            <label for="card-title-input-@Card.Id" id="card-edit-title-@Card.Id" class="sr-only">Título do cartão</label>
+            <input type="text" 
+                   id="card-title-input-@Card.Id"
+                   class="task-card-title-input" 
+                   @bind="EditTitle" 
+                   @onkeypress="HandleTitleKeyPress"
+                   @onblur="SaveTitle"
+                   @ref="titleInput"
+                   aria-describedby="card-title-help-@Card.Id"
+                   aria-required="true" />
+            
+            <label for="card-description-input-@Card.Id" class="sr-only">Descrição do cartão (opcional)</label>
+            <textarea id="card-description-input-@Card.Id"
+                      class="task-card-description-input" 
+                      @bind="EditDescription" 
+                      @onblur="SaveDescription"
+                      placeholder="Adicionar descrição..."
+                      rows="3"
+                      aria-describedby="card-description-help-@Card.Id"></textarea>
+            
+            <div class="task-card-actions" role="group" aria-label="Ações do cartão">
+                <button class="btn-save" 
+                        @onclick="SaveCard" 
+                        @onclick:stopPropagation="true"
+                        @onkeydown="HandleSaveKeyDown"
+                        aria-describedby="save-card-help-@Card.Id">Salvar</button>
+                <button class="btn-cancel" 
+                        @onclick="CancelEdit" 
+                        @onclick:stopPropagation="true"
+                        @onkeydown="HandleCancelKeyDown"
+                        aria-describedby="cancel-card-help-@Card.Id">Cancelar</button>
+            </div>
+            
+            <div id="card-title-help-@Card.Id" class="sr-only">
+                Digite o título do cartão. Pressione Enter para salvar ou Escape para cancelar.
+            </div>
+            <div id="card-description-help-@Card.Id" class="sr-only">
+                Descrição opcional do cartão. Use Tab para navegar para os botões.
+            </div>
+            <div id="save-card-help-@Card.Id" class="sr-only">Salvar alterações do cartão</div>
+            <div id="cancel-card-help-@Card.Id" class="sr-only">Cancelar edição e descartar alterações</div>
+        </div>
+    }
+    else
+    {
+        <div class="task-card-content">
+            <div class="task-card-title" id="card-title-@Card.Id">@Card.Title</div>
+            @if (!string.IsNullOrWhiteSpace(Card.Description))
+            {
+                <div class="task-card-description" id="card-description-@Card.Id">@Card.Description</div>
+            }
+            <div class="task-card-meta">
+                <small class="text-muted" aria-label="Criado em @Card.CreatedAt.ToString("dd 'de' MMMM 'de' yyyy")">
+                    @Card.CreatedAt.ToString("dd/MM/yyyy")
+                </small>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public Card Card { get; set; } = new();
+    [Parameter] public int CardIndex { get; set; } = 0;
+    [Parameter] public int TotalCards { get; set; } = 0;
+    [Parameter] public string BoardTitle { get; set; } = string.Empty;
+    [Parameter] public EventCallback<Card> OnCardUpdated { get; set; }
+    [Parameter] public EventCallback<Card> OnCardDeleted { get; set; }
+    
+    // Drag and Drop parameters
+    [Parameter] public EventCallback<DragEventArgs> OnDragStart { get; set; }
+    [Parameter] public EventCallback<DragEventArgs> OnDragEnd { get; set; }
+    [Parameter] public EventCallback<DragEventArgs> OnDragOver { get; set; }
+    [Parameter] public EventCallback<DragEventArgs> OnDrop { get; set; }
+    [Parameter] public EventCallback<DragEventArgs> OnDragEnter { get; set; }
+    [Parameter] public EventCallback<DragEventArgs> OnDragLeave { get; set; }
+    
+    [Inject] private IJSRuntime JSRuntime { get; set; } = default!;
+
+    private bool IsEditing { get; set; } = false;
+    private bool IsDragging { get; set; } = false;
+    private bool IsDragOver { get; set; } = false;
+    private string EditTitle { get; set; } = string.Empty;
+    private string EditDescription { get; set; } = string.Empty;
+    private ElementReference titleInput;
+
+    protected override void OnParametersSet()
+    {
+        EditTitle = Card.Title;
+        EditDescription = Card.Description;
+    }
+
+    private async Task HandleCardClick()
+    {
+        if (!IsEditing)
+        {
+            IsEditing = true;
+            EditTitle = Card.Title;
+            EditDescription = Card.Description;
+            StateHasChanged();
+            
+            // Focus no input do título após renderização
+            await Task.Delay(10);
+            await titleInput.FocusAsync();
+        }
+    }
+
+    private async Task HandleTitleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveTitle();
+        }
+        else if (e.Key == "Escape")
+        {
+            await CancelEdit();
+        }
+    }
+
+    private async Task SaveTitle()
+    {
+        if (!string.IsNullOrWhiteSpace(EditTitle) && EditTitle != Card.Title)
+        {
+            Card.Title = EditTitle.Trim();
+            Card.UpdateLastModified();
+            await OnCardUpdated.InvokeAsync(Card);
+        }
+    }
+
+    private async Task SaveDescription()
+    {
+        if (EditDescription != Card.Description)
+        {
+            Card.Description = EditDescription?.Trim() ?? string.Empty;
+            Card.UpdateLastModified();
+            await OnCardUpdated.InvokeAsync(Card);
+        }
+    }
+
+    private async Task SaveCard()
+    {
+        if (string.IsNullOrWhiteSpace(EditTitle))
+        {
+            // Se o título estiver vazio, cancela a edição
+            await CancelEdit();
+            return;
+        }
+
+        var hasChanges = EditTitle.Trim() != Card.Title || 
+                        (EditDescription?.Trim() ?? string.Empty) != Card.Description;
+
+        if (hasChanges)
+        {
+            Card.Title = EditTitle.Trim();
+            Card.Description = EditDescription?.Trim() ?? string.Empty;
+            Card.UpdateLastModified();
+            await OnCardUpdated.InvokeAsync(Card);
+        }
+
+        IsEditing = false;
+        StateHasChanged();
+    }
+
+    private Task CancelEdit()
+    {
+        IsEditing = false;
+        EditTitle = Card.Title;
+        EditDescription = Card.Description;
+        StateHasChanged();
+        return Task.CompletedTask;
+    }
+
+    // Drag and Drop event handlers
+    private async Task HandleDragStart(DragEventArgs e)
+    {
+        if (IsEditing) return;
+        
+        IsDragging = true;
+        StateHasChanged();
+        
+        // Create drag data
+        var dragData = new DragDropData(Card);
+        
+        // Set the card data for the drag operation
+        await e.DataTransfer.SetDataAsync(JSRuntime, DragDropConstants.TextDataType, Card.Id);
+        await e.DataTransfer.SetDataAsync(JSRuntime, DragDropConstants.CardDataType, JsonSerializer.Serialize(dragData));
+        
+        // Set drag effect
+        e.DataTransfer.EffectAllowed = "move";
+        
+        await OnDragStart.InvokeAsync(e);
+    }
+
+    private async Task HandleDragEnd(DragEventArgs e)
+    {
+        IsDragging = false;
+        IsDragOver = false;
+        StateHasChanged();
+        
+        await OnDragEnd.InvokeAsync(e);
+    }
+
+    private async Task HandleDragOver(DragEventArgs e)
+    {
+        if (IsEditing) return;
+        
+        e.DataTransfer.DropEffect = "move";
+        await OnDragOver.InvokeAsync(e);
+    }
+
+    private async Task HandleDrop(DragEventArgs e)
+    {
+        if (IsEditing) return;
+        
+        IsDragOver = false;
+        StateHasChanged();
+        
+        await OnDrop.InvokeAsync(e);
+    }
+
+    private async Task HandleDragEnter(DragEventArgs e)
+    {
+        if (IsEditing) return;
+        
+        IsDragOver = true;
+        StateHasChanged();
+        
+        await OnDragEnter.InvokeAsync(e);
+    }
+
+    private async Task HandleDragLeave(DragEventArgs e)
+    {
+        if (IsEditing) return;
+        
+        IsDragOver = false;
+        StateHasChanged();
+        
+        await OnDragLeave.InvokeAsync(e);
+    }
+
+    #region Keyboard Navigation and Accessibility
+
+    private async Task HandleCardKeyDown(KeyboardEventArgs e)
+    {
+        if (IsEditing) return; // Don't handle navigation when editing
+
+        if (e.Key == "Enter" || e.Key == " ")
+        {
+            await HandleCardClick();
+
+        }
+        else if (e.Key == "Delete")
+        {
+            await DeleteCard();
+
+        }
+        else if (e.Key == "ArrowUp" || e.Key == "ArrowDown")
+        {
+            await NavigateToAdjacentCard(e.Key == "ArrowDown");
+
+        }
+        else if (e.Key == "ArrowLeft" || e.Key == "ArrowRight")
+        {
+            await NavigateToAdjacentBoard(e.Key == "ArrowRight");
+
+        }
+        else if (e.Key == "Home")
+        {
+            await NavigateToFirstCard();
+
+        }
+        else if (e.Key == "End")
+        {
+            await NavigateToLastCard();
+
+        }
+        else if (e.Key == "Escape")
+        {
+            await FocusParentBoard();
+
+        }
+    }
+
+    private async Task HandleSaveKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SaveCard();
+
+        }
+    }
+
+    private async Task HandleCancelKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await CancelEdit();
+
+        }
+    }
+
+    private async Task DeleteCard()
+    {
+        try
+        {
+            await AnnounceToScreenReader($"Removendo cartão {Card.Title}");
+            await OnCardDeleted.InvokeAsync(Card);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao deletar cartão: {ex.Message}");
+            await AnnounceToScreenReader($"Erro ao remover cartão: {ex.Message}");
+        }
+    }
+
+    private async Task NavigateToAdjacentCard(bool moveDown)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.navigateToCard", 
+                Card.Id, CardIndex, TotalCards, moveDown);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao navegar para cartão adjacente: {ex.Message}");
+        }
+    }
+
+    private async Task NavigateToAdjacentBoard(bool moveRight)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.navigateToBoardFromCard", 
+                Card.BoardId, moveRight);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao navegar para quadro adjacente: {ex.Message}");
+        }
+    }
+
+    private async Task NavigateToFirstCard()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.navigateToFirstCard", Card.BoardId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao navegar para primeiro cartão: {ex.Message}");
+        }
+    }
+
+    private async Task NavigateToLastCard()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.navigateToLastCard", Card.BoardId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao navegar para último cartão: {ex.Message}");
+        }
+    }
+
+    private async Task FocusParentBoard()
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.focusBoard", Card.BoardId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao focar quadro pai: {ex.Message}");
+        }
+    }
+
+    private async Task AnnounceToScreenReader(string message)
+    {
+        try
+        {
+            await JSRuntime.InvokeVoidAsync("kanbanAccessibility.announce", message);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao anunciar para leitor de tela: {ex.Message}");
+        }
+    }
+
+    #endregion
+}

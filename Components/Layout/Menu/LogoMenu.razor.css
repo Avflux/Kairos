@@ -1,0 +1,87 @@
+/* ===== COMPONENTE LOGO DO MENU ===== */
+/*
+ * AJUSTES DE DISTÂNCIA E PADDING:
+ * - min-height: Define altura mínima da seção (atual: 100px)
+ * - padding: Espaçamento interno (atual: 1rem = 16px)
+ * - gap: Espaço entre ícone e texto (atual: 1rem)
+ *
+ * EXEMPLOS DE AJUSTES:
+ * min-height: 80px;     → Logo menor
+ * min-height: 120px;    → Logo maior
+ * padding: 0.5rem;      → Padding menor
+ * padding: 1.5rem;      → Padding maior
+ * gap: 0.5rem;          → Ícone e texto mais próximos
+ * gap: 1.5rem;          → Ícone e texto mais afastados
+ */
+
+.menu-section.menu-logo {
+    border-bottom: 2px solid rgba(0, 0, 0, 0.1);
+    min-height: 100px;      /* AJUSTE: Altura do container do logo */
+    justify-content: center;
+    /*
+     * AJUSTES DE LAYOUT:
+     * justify-content: center → Centraliza horizontalmente
+     * Para alinhar à esquerda: justify-content: flex-start
+     * Para alinhar à direita: justify-content: flex-end
+     */
+}
+
+.menu-logo-content {
+    display: flex;
+    align-items: center;    /* AJUSTE: Centraliza verticalmente */
+    justify-content: center; /* AJUSTE: Centraliza horizontalmente */
+    width: 100%;
+    height: 100%;
+    /*
+     * AJUSTES DE DIMENSÃO:
+     * width: 100% → Ocupa toda largura disponível
+     * height: 100% → Ocupa toda altura disponível
+     */
+}
+
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 1rem;             /* AJUSTE: Espaço entre ícone e texto */
+    color: #333333;        /* AJUSTE: Cor do texto */
+    /*
+     * EXEMPLOS DE CORES:
+     * color: #000000;       → Preto puro
+     * color: #666666;       → Cinza médio
+     * color: #ffffff;       → Branco (para temas escuros)
+     * color: #007bff;       → Azul (cor da marca)
+     */
+}
+
+.logo-img {
+    width: 40px;           /* AJUSTE: Largura do ícone */
+    height: 40px;          /* AJUSTE: Altura do ícone */
+    /*
+     * EXEMPLOS DE TAMANHOS:
+     * width: 32px; height: 32px; → Ícone menor
+     * width: 48px; height: 48px; → Ícone maior
+     * width: 50px; height: 50px; → Ícone quadrado maior
+     */
+}
+
+.logo-text {
+    font-size: 1.5rem;     /* AJUSTE: Tamanho da fonte */
+    font-weight: bold;     /* AJUSTE: Peso da fonte */
+    letter-spacing: 2px;   /* AJUSTE: Espaçamento entre letras */
+    color: #333333;        /* AJUSTE: Cor do texto */
+    /*
+     * EXEMPLOS DE AJUSTES DE FONTE:
+     * font-size: 1.2rem;    → Texto menor
+     * font-size: 1.8rem;    → Texto maior
+     * font-weight: normal;  → Texto normal (não bold)
+     * font-weight: 600;     → Semi-bold
+     * letter-spacing: 1px;  → Espaçamento menor
+     * letter-spacing: 3px;  → Espaçamento maior
+     *
+     * EXEMPLOS DE CORES:
+     * color: #000000;       → Preto
+     * color: #ffffff;       → Branco
+     * color: #007bff;       → Azul
+     * color: #28a745;       → Verde
+     */
+}

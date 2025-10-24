@@ -1,0 +1,167 @@
+<!-- Componente Botões do Menu -->
+<div class="menu-section menu-buttons">
+    <!-- Div para empurrar os botões para o topo -->
+    <div class="menu-buttons-spacer"></div>
+
+    <div class="menu-buttons-content">
+        <nav class="menu-nav">
+            <!-- Botão HOME - mantém estilo original -->
+            <div class="nav-item">
+                <a class="nav-link" href="">
+                    <span class="bi bi-house-door-fill" aria-hidden="true"></span> Home
+                </a>
+            </div>
+
+            <!-- Botão ATIVIDADES - com submenu simples -->
+            <div class="nav-item atividades-dropdown">
+                <button class="nav-link atividades-button" @onclick="ToggleAtividadesSubmenu">
+                    <span class="atividade-text">ATIVIDADES</span>
+                    <span class="dropdown-arrow @(isAtividadesOpen ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></span>
+                </button>
+
+                <!-- Submenu de atividades - botões simples abaixo -->
+                @if (isAtividadesOpen)
+                {
+                    <div class="submenu-simple">
+                        <a class="submenu-button" href="atividades/civil">
+                            <span class="submenu-icon-svg">
+                                <img src="/icons/civil.svg" alt="Civil" width="20" height="20" />
+                            </span>
+                            <span class="submenu-text">CIVIL</span>
+                        </a>
+                        <a class="submenu-button" href="atividades/eletromecanica">
+                            <span class="submenu-icon-svg">
+                                <img src="/icons/eletromecanica.svg" alt="Eletromecânica" width="20" height="20" />
+                            </span>
+                            <span class="submenu-text">ELETROMECÂNICA</span>
+                        </a>
+                        <a class="submenu-button" href="atividades/spcs">
+                            <span class="submenu-icon-svg">
+                                <img src="/icons/spcs.svg" alt="SPCS" width="20" height="20" />
+                            </span>
+                            <span class="submenu-text">SPCS</span>
+                        </a>
+                    </div>
+                }
+            </div>
+
+            <!-- Botão ARQUIVOS - com submenu simples -->
+            <div class="nav-item arquivos-dropdown">
+                <button class="nav-link atividades-button" @onclick="ToggleArquivosSubmenu">
+                    <span class="atividade-text">ARQUIVOS</span>
+                    <span class="dropdown-arrow @(isArquivosOpen ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></span>
+                </button>
+
+                <!-- Submenu de arquivos - botões simples abaixo -->
+                @if (isArquivosOpen)
+                {
+                    <div class="submenu-simple">
+                        <a class="submenu-button" href="arquivos/atividades">
+                            <span class="submenu-icon-svg">
+                                <img src="/icons/atividades.svg" alt="Atividades" width="20" height="20" />
+                            </span>
+                            <span class="submenu-text">ATIVIDADES</span>
+                        </a>
+                        <a class="submenu-button" href="arquivos/pastas">
+                            <span class="submenu-icon-svg">
+                                <img src="/icons/pasta.svg" alt="Pastas" width="20" height="20" />
+                            </span>
+                            <span class="submenu-text">PASTAS</span>
+                        </a>
+                        <a class="submenu-button" href="arquivos/projetos">
+                            <span class="submenu-icon-svg">
+                                <img src="/icons/projeto.svg" alt="Projetos" width="20" height="20" />
+                            </span>
+                            <span class="submenu-text">PROJETOS</span>
+                        </a>
+                    </div>
+                }
+            </div>
+            <!-- Botão VÍDEOS - com submenu simples -->
+            <div class="nav-item videos-dropdown">
+                <button class="nav-link atividades-button" @onclick="ToggleVideosSubmenu">
+                    <span class="atividade-text">VÍDEOS</span>
+                    <span class="dropdown-arrow @(isVideosOpen ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></span>
+                </button>
+
+                <!-- Submenu de vídeos - botões simples abaixo -->
+                @if (isVideosOpen)
+                {
+                    <div class="submenu-simple">
+                        <a class="submenu-button" href="videos/treinamentos">
+                            <span class="submenu-icon-svg">
+                                <img src="/icons/treinamento.svg" alt="Treinamentos" width="20" height="20" />
+                            </span>
+                            <span class="submenu-text">TREINAMENTOS</span>
+                        </a>
+                        <a class="submenu-button" href="videos/conscientizacao">
+                            <span class="submenu-icon-svg">
+                                <img src="/icons/concientizacao.svg" alt="Concientização" width="20" height="20" />
+                            </span>
+                            <span class="submenu-text">CONCIENTIZAÇÃO</span>
+                        </a>
+                    </div>
+                }
+            </div>
+            <!-- Botão DASHBOARDS - com submenu simples -->
+            <div class="nav-item dashboards-dropdown">
+                <button class="nav-link atividades-button" @onclick="ToggleDashboardsSubmenu">
+                    <span class="atividade-text">DASHBOARDS</span>
+                    <span class="dropdown-arrow @(isDashboardsOpen ? "bi-chevron-up" : "bi-chevron-down")" aria-hidden="true"></span>
+                </button>
+
+                <!-- Submenu de dashboards - botões simples abaixo -->
+                @if (isDashboardsOpen)
+                {
+                    <div class="submenu-simple">
+                        <a class="submenu-button" href="dashboards/atividades">
+                            <span class="submenu-icon-svg">
+                                <img src="/icons/dashatividades.svg" alt="Atividades" width="20" height="20" />
+                            </span>
+                            <span class="submenu-text">ATIVIDADES</span>
+                        </a>
+                        <a class="submenu-button" href="dashboards/equipes">
+                            <span class="submenu-icon-svg">
+                                <img src="/icons/dashequipes.svg" alt="Equipes" width="20" height="20" />
+                            </span>
+                            <span class="submenu-text">EQUIPES</span>
+                        </a>
+                        <a class="submenu-button" href="dashboards/projetos">
+                            <span class="submenu-icon-svg">
+                                <img src="/icons/dashprojetos.svg" alt="Projetos" width="20" height="20" />
+                            </span>
+                            <span class="submenu-text">PROJETOS</span>
+                        </a>
+                    </div>
+                }
+            </div>
+        </nav>
+    </div>
+</div>
+
+@code {
+    private bool isAtividadesOpen = false;
+    private bool isArquivosOpen = false;
+    private bool isVideosOpen = false;
+    private bool isDashboardsOpen = false;
+
+    private void ToggleAtividadesSubmenu()
+    {
+        isAtividadesOpen = !isAtividadesOpen;
+    }
+
+    private void ToggleArquivosSubmenu()
+    {
+        isArquivosOpen = !isArquivosOpen;
+    }
+
+    private void ToggleVideosSubmenu()
+    {
+        isVideosOpen = !isVideosOpen;
+    }
+
+    private void ToggleDashboardsSubmenu()
+    {
+        isDashboardsOpen = !isDashboardsOpen;
+    }
+}
